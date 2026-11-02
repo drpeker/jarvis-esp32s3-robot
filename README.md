@@ -4,6 +4,8 @@ Jarvis is a small tracked robot built on an **ESP32-S3 N16R8** (16 MB flash, 8 M
 You talk to it ("Jarvis, turn left 90 degrees", "go 10 cm forward", "look around", "how is your
 battery?") and an LLM drives it through MCP tools running on the robot.
 
+![Jarvis wiring diagram](docs/jarvis/wiring.svg)
+
 The firmware is a fork of the open-source
 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) voice assistant (MIT). Everything specific
 to Jarvis lives in [`main/boards/robot-n16r8/`](main/boards/robot-n16r8/). The original
@@ -44,7 +46,7 @@ xiaozhi README is kept as [README_xiaozhi.md](README_xiaozhi.md).
 
 ## Pin plan
 
-All pins are defined in [`main/boards/robot-n16r8/config.h`](main/boards/robot-n16r8/config.h).
+The [wiring diagram](docs/jarvis/wiring.svg) above shows the same connections. All pins are defined in [`main/boards/robot-n16r8/config.h`](main/boards/robot-n16r8/config.h).
 
 ### Display — ST7789 240×240 (SPI2)
 

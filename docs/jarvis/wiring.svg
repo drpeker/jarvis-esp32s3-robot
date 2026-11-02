@@ -1,0 +1,264 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1200" width="1240" height="1200" font-family="Helvetica, Arial, sans-serif">
+<rect width="1240" height="1200" fill="#ffffff"/>
+<text x="620.0" y="34" font-size="20" text-anchor="middle" font-weight="bold" fill="#1d1d1f">Jarvis — simplified wiring (ESP32-S3 WROOM-1 N16R8)</text>
+<text x="620.0" y="56" font-size="12" text-anchor="middle" font-weight="normal" fill="#555">colors = signal groups · I2C bus shared by camera SCCB, MPU-6050 and INA219 · all modules powered from 3V3 unless noted</text>
+<rect x="520" y="100" width="200" height="657" rx="12" fill="#2b2b2b" stroke="#111" stroke-width="2"/>
+<text x="620.0" y="126" font-size="18" text-anchor="middle" font-weight="bold" fill="#fff">ESP32-S3</text>
+<text x="620.0" y="144" font-size="12" text-anchor="middle" font-weight="normal" fill="#ccc">WROOM-1 N16R8</text>
+<text x="620.0" y="727" font-size="11" text-anchor="middle" font-weight="normal" fill="#ccc">16 MB flash · 8 MB PSRAM</text>
+<text x="620.0" y="743" font-size="11" text-anchor="middle" font-weight="normal" fill="#ccc">USB-C (flash / power)</text>
+<rect x="180" y="116" width="250" height="143" rx="10" fill="#dbe9f7" stroke="#333" stroke-width="1.5"/>
+<text x="305.0" y="136" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">ST7789 1.54" LCD</text>
+<text x="305.0" y="152" font-size="11" text-anchor="middle" font-weight="normal" fill="#444">240×240 SPI</text>
+<text x="190" y="168" font-size="10" text-anchor="start" font-weight="normal" fill="#555">VCC → 3V3</text>
+<text x="190" y="182" font-size="10" text-anchor="start" font-weight="normal" fill="#555">GND → GND</text>
+<text x="190" y="196" font-size="10" text-anchor="start" font-weight="normal" fill="#555">CS → GND</text>
+<text x="190" y="210" font-size="10" text-anchor="start" font-weight="normal" fill="#555">BL → 3V3</text>
+<circle cx="430" cy="160" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="422" y="164" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">SCL/SCK</text>
+<polyline points="430,160 520,160" fill="none" stroke="#1f77b4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="160" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="528" y="164" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO39</text>
+<circle cx="430" cy="187" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="422" y="191" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">SDA/MOSI</text>
+<polyline points="430,187 520,187" fill="none" stroke="#1f77b4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="187" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="528" y="191" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO40</text>
+<circle cx="430" cy="214" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="422" y="218" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">DC</text>
+<polyline points="430,214 520,214" fill="none" stroke="#1f77b4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="214" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="528" y="218" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO38</text>
+<circle cx="430" cy="241" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="422" y="245" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">RES/RST</text>
+<polyline points="430,241 520,241" fill="none" stroke="#1f77b4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="241" r="4.5" fill="#1f77b4" stroke="#222" stroke-width="1"/>
+<text x="528" y="245" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO48</text>
+<rect x="180" y="286" width="250" height="116" rx="10" fill="#dff2dd" stroke="#333" stroke-width="1.5"/>
+<text x="305.0" y="306" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">INMP441</text>
+<text x="305.0" y="322" font-size="11" text-anchor="middle" font-weight="normal" fill="#444">I2S microphone</text>
+<text x="190" y="338" font-size="10" text-anchor="start" font-weight="normal" fill="#555">VDD → 3V3</text>
+<text x="190" y="352" font-size="10" text-anchor="start" font-weight="normal" fill="#555">GND → GND</text>
+<text x="190" y="366" font-size="10" text-anchor="start" font-weight="normal" fill="#555">L/R → GND</text>
+<circle cx="430" cy="330" r="4.5" fill="#2ca02c" stroke="#222" stroke-width="1"/>
+<text x="422" y="334" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">SCK</text>
+<polyline points="430,330 520,330" fill="none" stroke="#2ca02c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="330" r="4.5" fill="#2ca02c" stroke="#222" stroke-width="1"/>
+<text x="528" y="334" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO41</text>
+<circle cx="430" cy="357" r="4.5" fill="#2ca02c" stroke="#222" stroke-width="1"/>
+<text x="422" y="361" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">WS</text>
+<polyline points="430,357 520,357" fill="none" stroke="#2ca02c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="357" r="4.5" fill="#2ca02c" stroke="#222" stroke-width="1"/>
+<text x="528" y="361" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO42</text>
+<circle cx="430" cy="384" r="4.5" fill="#2ca02c" stroke="#222" stroke-width="1"/>
+<text x="422" y="388" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">SD</text>
+<polyline points="430,384 520,384" fill="none" stroke="#2ca02c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="384" r="4.5" fill="#2ca02c" stroke="#222" stroke-width="1"/>
+<text x="528" y="388" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO46</text>
+<rect x="180" y="429" width="250" height="116" rx="10" fill="#ebe1f5" stroke="#333" stroke-width="1.5"/>
+<text x="305.0" y="449" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">MAX98357A</text>
+<text x="305.0" y="465" font-size="11" text-anchor="middle" font-weight="normal" fill="#444">I2S amplifier</text>
+<text x="190" y="481" font-size="10" text-anchor="start" font-weight="normal" fill="#555">VIN → 5V</text>
+<text x="190" y="495" font-size="10" text-anchor="start" font-weight="normal" fill="#555">GND → GND</text>
+<text x="190" y="509" font-size="10" text-anchor="start" font-weight="normal" fill="#555">OUT → speaker</text>
+<circle cx="430" cy="473" r="4.5" fill="#9467bd" stroke="#222" stroke-width="1"/>
+<text x="422" y="477" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">BCLK</text>
+<polyline points="430,473 520,473" fill="none" stroke="#9467bd" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="473" r="4.5" fill="#9467bd" stroke="#222" stroke-width="1"/>
+<text x="528" y="477" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO47</text>
+<circle cx="430" cy="500" r="4.5" fill="#9467bd" stroke="#222" stroke-width="1"/>
+<text x="422" y="504" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">LRC</text>
+<polyline points="430,500 520,500" fill="none" stroke="#9467bd" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="500" r="4.5" fill="#9467bd" stroke="#222" stroke-width="1"/>
+<text x="528" y="504" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO3</text>
+<circle cx="430" cy="527" r="4.5" fill="#9467bd" stroke="#222" stroke-width="1"/>
+<text x="422" y="531" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">DIN</text>
+<polyline points="430,527 520,527" fill="none" stroke="#9467bd" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="527" r="4.5" fill="#9467bd" stroke="#222" stroke-width="1"/>
+<text x="528" y="531" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO45</text>
+<rect x="180" y="572" width="250" height="143" rx="10" fill="#fde6cf" stroke="#333" stroke-width="1.5"/>
+<text x="305.0" y="592" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">MX1508</text>
+<text x="305.0" y="608" font-size="11" text-anchor="middle" font-weight="normal" fill="#444">dual H-bridge</text>
+<text x="190" y="624" font-size="10" text-anchor="start" font-weight="normal" fill="#555">VCC ← INA219 VIN−</text>
+<text x="190" y="638" font-size="10" text-anchor="start" font-weight="normal" fill="#555">GND → GND</text>
+<text x="190" y="652" font-size="10" text-anchor="start" font-weight="normal" fill="#555">OUT A → left motor</text>
+<text x="190" y="666" font-size="10" text-anchor="start" font-weight="normal" fill="#555">OUT B → right motor</text>
+<circle cx="430" cy="616" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="422" y="620" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">IN1 (A)</text>
+<polyline points="430,616 520,616" fill="none" stroke="#ff7f0e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="616" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="528" y="620" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO14</text>
+<circle cx="430" cy="643" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="422" y="647" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">IN2 (A)</text>
+<polyline points="430,643 520,643" fill="none" stroke="#ff7f0e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="643" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="528" y="647" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO21</text>
+<circle cx="430" cy="670" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="422" y="674" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">IN3 (B)</text>
+<polyline points="430,670 520,670" fill="none" stroke="#ff7f0e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="670" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="528" y="674" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO1</text>
+<circle cx="430" cy="697" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="422" y="701" font-size="12" text-anchor="end" font-weight="bold" fill="#1d1d1f">IN4 (B)</text>
+<polyline points="430,697 520,697" fill="none" stroke="#ff7f0e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="520" cy="697" r="4.5" fill="#ff7f0e" stroke="#222" stroke-width="1"/>
+<text x="528" y="701" font-size="12" text-anchor="start" font-weight="normal" fill="#fff">GPIO2</text>
+<circle cx="100" cy="626" r="34" fill="#f3f3f3" stroke="#333" stroke-width="1.5"/>
+<text x="100" y="622" font-size="12" text-anchor="middle" font-weight="bold" fill="#1d1d1f">Left</text>
+<text x="100" y="638" font-size="12" text-anchor="middle" font-weight="normal" fill="#1d1d1f">motor</text>
+<circle cx="100" cy="707" r="34" fill="#f3f3f3" stroke="#333" stroke-width="1.5"/>
+<text x="100" y="703" font-size="12" text-anchor="middle" font-weight="bold" fill="#1d1d1f">Right</text>
+<text x="100" y="719" font-size="12" text-anchor="middle" font-weight="normal" fill="#1d1d1f">motor</text>
+<polyline points="134,626 180,626" fill="none" stroke="#555" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="134,707 180,707" fill="none" stroke="#555" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="60" y="459" width="60" height="44" rx="6" fill="#f3f3f3" stroke="#333" stroke-width="1.5"/>
+<text x="90" y="477" font-size="11" text-anchor="middle" font-weight="bold" fill="#1d1d1f">Speaker</text>
+<text x="90" y="493" font-size="11" text-anchor="middle" font-weight="normal" fill="#1d1d1f">4–8 Ω</text>
+<polyline points="120,481 180,481" fill="none" stroke="#555" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="860" y="116" width="230" height="477" rx="10" fill="#d5f1f4" stroke="#333" stroke-width="1.5"/>
+<text x="975.0" y="136" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">OV2640 camera</text>
+<text x="975.0" y="152" font-size="11" text-anchor="middle" font-weight="normal" fill="#444">DVP 8-bit, 20 MHz XCLK</text>
+<text x="970" y="196" font-size="10" text-anchor="start" font-weight="normal" fill="#444">3V3 / GND</text>
+<text x="970" y="211" font-size="10" text-anchor="start" font-weight="normal" fill="#444">RESET: not connected</text>
+<text x="970" y="226" font-size="10" text-anchor="start" font-weight="normal" fill="#444">PWDN: not connected</text>
+<text x="970" y="241" font-size="10" text-anchor="start" font-weight="normal" fill="#444">(soft reset over SCCB</text>
+<text x="970" y="256" font-size="10" text-anchor="start" font-weight="normal" fill="#444"> at boot)</text>
+<circle cx="860" cy="160" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="164" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">XCLK</text>
+<polyline points="720,160 860,160" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="160" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="164" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO15</text>
+<circle cx="860" cy="187" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="191" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">PCLK</text>
+<polyline points="720,187 860,187" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="187" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="191" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO13</text>
+<circle cx="860" cy="214" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="218" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">VSYNC</text>
+<polyline points="720,214 860,214" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="214" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="218" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO6</text>
+<circle cx="860" cy="241" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="245" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">HREF</text>
+<polyline points="720,241 860,241" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="241" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="245" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO7</text>
+<circle cx="860" cy="268" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="272" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D0</text>
+<polyline points="720,268 860,268" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="268" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="272" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO11</text>
+<circle cx="860" cy="295" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="299" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D1</text>
+<polyline points="720,295 860,295" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="295" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="299" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO9</text>
+<circle cx="860" cy="322" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="326" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D2</text>
+<polyline points="720,322 860,322" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="322" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="326" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO8</text>
+<circle cx="860" cy="349" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="353" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D3</text>
+<polyline points="720,349 860,349" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="349" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="353" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO10</text>
+<circle cx="860" cy="376" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="380" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D4</text>
+<polyline points="720,376 860,376" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="376" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="380" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO12</text>
+<circle cx="860" cy="403" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="407" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D5</text>
+<polyline points="720,403 860,403" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="403" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="407" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO18</text>
+<circle cx="860" cy="430" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="434" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D6</text>
+<polyline points="720,430 860,430" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="430" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="434" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO17</text>
+<circle cx="860" cy="457" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="868" y="461" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">D7</text>
+<polyline points="720,457 860,457" fill="none" stroke="#13a3b5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="720" cy="457" r="4.5" fill="#13a3b5" stroke="#222" stroke-width="1"/>
+<text x="712" y="461" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO16</text>
+<circle cx="720" cy="546" r="4.5" fill="#d4a017" stroke="#222" stroke-width="1"/>
+<text x="712" y="550" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO4</text>
+<polyline points="720,546 860,546" fill="none" stroke="#d4a017" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="860" cy="546" r="4.5" fill="#d4a017" stroke="#222" stroke-width="1"/>
+<text x="868" y="550" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">SIOD (SDA)</text>
+<circle cx="720" cy="573" r="4.5" fill="#8c564b" stroke="#222" stroke-width="1"/>
+<text x="712" y="577" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO5</text>
+<polyline points="720,573 860,573" fill="none" stroke="#8c564b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="860" cy="573" r="4.5" fill="#8c564b" stroke="#222" stroke-width="1"/>
+<text x="868" y="577" font-size="12" text-anchor="start" font-weight="bold" fill="#1d1d1f">SIOC (SCL)</text>
+<circle cx="720" cy="662" r="4.5" fill="#7f7f7f" stroke="#222" stroke-width="1"/>
+<text x="712" y="666" font-size="12" text-anchor="end" font-weight="normal" fill="#fff">GPIO0</text>
+<polyline points="720,662 860,662" fill="none" stroke="#7f7f7f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="860" y="646" width="110" height="32" rx="6" fill="#eeeeee" stroke="#333" stroke-width="1.5"/>
+<text x="915" y="667" font-size="12" text-anchor="middle" font-weight="bold" fill="#1d1d1f">BOOT button</text>
+<rect x="770" y="757" width="205" height="150" rx="10" fill="#fff4cc" stroke="#333" stroke-width="1.5"/>
+<text x="872.5" y="777" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">MPU-6050 (GY-521)</text>
+<text x="872.5" y="793" font-size="11" text-anchor="middle" font-weight="normal" fill="#444">I2C 0x68 · AD0 → GND</text>
+<text x="780" y="833" font-size="11" text-anchor="start" font-weight="normal" fill="#444">VCC → 3V3</text>
+<text x="780" y="848" font-size="11" text-anchor="start" font-weight="normal" fill="#444">GND → GND</text>
+<text x="780" y="863" font-size="11" text-anchor="start" font-weight="normal" fill="#444">mount flat:</text>
+<text x="780" y="878" font-size="11" text-anchor="start" font-weight="normal" fill="#444">X forward, Y left, Z up</text>
+<circle cx="840" cy="757" r="4.5" fill="#d4a017" stroke="#222" stroke-width="1"/>
+<text x="840" y="811" font-size="11" text-anchor="middle" font-weight="bold" fill="#1d1d1f">SDA</text>
+<polyline points="840,757 840,735 800,735" fill="none" stroke="#d4a017" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="900" cy="757" r="4.5" fill="#8c564b" stroke="#222" stroke-width="1"/>
+<text x="900" y="811" font-size="11" text-anchor="middle" font-weight="bold" fill="#1d1d1f">SCL</text>
+<polyline points="900,757 900,725 820,725" fill="none" stroke="#8c564b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="995" y="757" width="205" height="150" rx="10" fill="#fff4cc" stroke="#333" stroke-width="1.5"/>
+<text x="1097.5" y="777" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">INA219 (R100 shunt)</text>
+<text x="1097.5" y="793" font-size="11" text-anchor="middle" font-weight="normal" fill="#444">I2C 0x40 · A0/A1 open</text>
+<text x="1005" y="833" font-size="11" text-anchor="start" font-weight="normal" fill="#444">VCC → 3V3</text>
+<text x="1005" y="848" font-size="11" text-anchor="start" font-weight="normal" fill="#444">GND → GND</text>
+<text x="1005" y="863" font-size="11" text-anchor="start" font-weight="normal" fill="#444">VIN+ ← battery +</text>
+<text x="1005" y="878" font-size="11" text-anchor="start" font-weight="normal" fill="#444">VIN− → robot power in</text>
+<circle cx="1065" cy="757" r="4.5" fill="#d4a017" stroke="#222" stroke-width="1"/>
+<text x="1065" y="811" font-size="11" text-anchor="middle" font-weight="bold" fill="#1d1d1f">SDA</text>
+<polyline points="1065,757 1065,735 800,735" fill="none" stroke="#d4a017" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="1125" cy="757" r="4.5" fill="#8c564b" stroke="#222" stroke-width="1"/>
+<text x="1125" y="811" font-size="11" text-anchor="middle" font-weight="bold" fill="#1d1d1f">SCL</text>
+<polyline points="1125,757 1125,725 820,725" fill="none" stroke="#8c564b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="800,546 800,735" fill="none" stroke="#d4a017" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="800" cy="546" r="4.5" fill="#d4a017" stroke="#222" stroke-width="1"/>
+<polyline points="820,573 820,725" fill="none" stroke="#8c564b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="820" cy="573" r="4.5" fill="#8c564b" stroke="#222" stroke-width="1"/>
+<text x="1010" y="709" font-size="11" text-anchor="middle" font-weight="normal" fill="#8a6d00">+ 4.7 kΩ pull-ups SDA/SCL → 3V3 (recommended)</text>
+<rect x="180" y="957" width="250" height="70" rx="10" fill="#fde2e2" stroke="#333" stroke-width="1.5"/>
+<text x="305.0" y="981" font-size="14" text-anchor="middle" font-weight="bold" fill="#1d1d1f">1S Li-ion 5600 mAh (+ switch)</text>
+<text x="305.0" y="999" font-size="10" text-anchor="middle" font-weight="normal" fill="#444">no BMS: firmware warns &lt;3.5 V,</text>
+<text x="305.0" y="1013" font-size="10" text-anchor="middle" font-weight="normal" fill="#444">locks the motors &lt;3.3 V</text>
+<polyline points="430,982 1055,982 1055,907" fill="none" stroke="#d62728" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="1055" cy="907" r="4.5" fill="#d62728" stroke="#222" stroke-width="1"/>
+<text x="700" y="975" font-size="11" text-anchor="middle" font-weight="normal" fill="#d62728">battery +  →  INA219 VIN+</text>
+<polyline points="1145,907 1145,1062 470,1062 470,735 400,735 400,715" fill="none" stroke="#d62728" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="1145" cy="907" r="4.5" fill="#d62728" stroke="#222" stroke-width="1"/>
+<circle cx="400" cy="715" r="4.5" fill="#d62728" stroke="#222" stroke-width="1"/>
+<polyline points="620.0,1062 620.0,757" fill="none" stroke="#d62728" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="620.0" cy="1062" r="4.5" fill="#d62728" stroke="#222" stroke-width="1"/>
+<circle cx="620.0" cy="757" r="4.5" fill="#d62728" stroke="#222" stroke-width="1"/>
+<text x="628.0" y="777" font-size="11" text-anchor="start" font-weight="normal" fill="#d62728">5V / VIN</text>
+<text x="700" y="1078" font-size="11" text-anchor="middle" font-weight="normal" fill="#d62728">INA219 VIN−  →  MX1508 VCC  +  ESP32 board power (5V/VIN)</text>
+<text x="180" y="1047" font-size="11" text-anchor="start" font-weight="normal" fill="#222222">battery −  →  common GND</text>
+<rect x="40" y="1160" width="26" height="6" fill="#1f77b4"/>
+<text x="72" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">Display SPI</text>
+<rect x="188" y="1160" width="26" height="6" fill="#2ca02c"/>
+<text x="220" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">Microphone I2S</text>
+<rect x="336" y="1160" width="26" height="6" fill="#9467bd"/>
+<text x="368" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">Amplifier I2S</text>
+<rect x="484" y="1160" width="26" height="6" fill="#ff7f0e"/>
+<text x="516" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">Motor PWM</text>
+<rect x="632" y="1160" width="26" height="6" fill="#13a3b5"/>
+<text x="664" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">Camera DVP</text>
+<rect x="780" y="1160" width="26" height="6" fill="#d4a017"/>
+<text x="812" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">I2C SDA</text>
+<rect x="928" y="1160" width="26" height="6" fill="#8c564b"/>
+<text x="960" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">I2C SCL</text>
+<rect x="1076" y="1160" width="26" height="6" fill="#d62728"/>
+<text x="1108" y="1168" font-size="12" text-anchor="start" font-weight="normal" fill="#1d1d1f">Power</text>
+</svg>
