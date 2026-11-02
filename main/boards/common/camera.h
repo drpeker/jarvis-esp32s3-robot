@@ -1,0 +1,22 @@
+#ifndef CAMERA_H
+#define CAMERA_H
+
+#include <mutex>
+#include <string>
+
+class Camera {
+public:
+    virtual ~Camera() = default;
+
+    virtual void SetExplainUrl(const std::string& url, const std::string& token) = 0;
+    virtual bool Capture() = 0;
+    virtual bool SetHMirror(bool enabled) = 0;
+    virtual bool SetVFlip(bool enabled) = 0;
+    virtual bool SetSwapBytes(bool enabled) { return false; }  // Optional, default no-op
+    virtual std::string Explain(const std::string& question) = 0;
+    // Optional shared lock for camera implementations whose framebuffer driver
+    // is also consumed by board-local streaming servers.
+    virtual std::mutex* GetMutex() { return nullptr; }
+};
+
+#endif  // CAMERA_H

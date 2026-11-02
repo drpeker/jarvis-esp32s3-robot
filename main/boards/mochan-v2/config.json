@@ -1,0 +1,28 @@
+{
+    "target": "esp32s3",
+    "builds": [
+        {
+            "name": "mochan-v2",
+            "sdkconfig_append": [
+                "CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y",
+                "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/v2/8m-no-ota.csv\"",
+                "CONFIG_SPIRAM_MODE_OCT=y",
+                "CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y",
+                "CONFIG_ESP_CONSOLE_SECONDARY_NONE=y",
+                "CONFIG_LANGUAGE_EN_US=y",
+                "CONFIG_WAKE_WORD_DISABLED=y",
+                "CONFIG_USE_AFE_WAKE_WORD=n",
+                "CONFIG_SR_WN_WN9_NIHAOXIAOZHI_TTS=n",
+                "CONFIG_SR_WN_WN9_HITELLY_TTS=n",
+                "CONFIG_SR_WN_WN9_HIWALLE_TTS2=n",
+                "CONFIG_CAMERA_OV2640=n",
+                "CONFIG_CAMERA_OV3660=y",
+                "CONFIG_CAMERA_OV3660_AUTO_DETECT_DVP_INTERFACE_SENSOR=y",
+                "CONFIG_CAMERA_OV3660_DVP_YUV422_YUYV_240X240_24FPS=y",
+                "CONFIG_CAMERA_OV3660_DVP_YUV422_YUYV_640X480_10FPS=n",
+                "CONFIG_CAMERA_OV3660_DVP_DEFAULT_FMT_YUV422_YUYV_240X240_24FPS=y",
+                "CONFIG_LV_USE_SPINNER=y"
+            ]
+        }
+    ]
+}

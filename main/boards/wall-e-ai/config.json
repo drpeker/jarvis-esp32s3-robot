@@ -1,0 +1,24 @@
+{
+  "target": "esp32s3",
+  "builds": [
+    {
+      "name": "wall-e-ai",
+      "sdkconfig_append": [
+        "CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y",
+        "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/v2/16m.csv\"",
+        "CONFIG_SPIRAM_MODE_OCT=y",
+        "CONFIG_ESP_CONSOLE_UART_DEFAULT=y",
+        "CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=n",
+        "CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y",
+        "CONFIG_LANGUAGE_EN_US=y",
+        "CONFIG_SR_WN_WN9_NIHAOXIAOZHI_TTS=n",
+        "CONFIG_SR_WN_WN9_HITELLY_TTS=n",
+        "CONFIG_SR_WN_WN9_HIWALLE_TTS2=y",
+        "CONFIG_XIAOZHI_CAMERA_ALLOW_JPEG_INPUT=y",
+        "CONFIG_CAMERA_OV2640=y",
+        "CONFIG_CAMERA_OV3660=n",
+        "CONFIG_OLED_SH1106_128X64=y"
+      ]
+    }
+  ]
+}
