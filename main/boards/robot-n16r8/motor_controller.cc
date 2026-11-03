@@ -548,7 +548,10 @@ void MotorController::RegisterMcpTools() {
         "turns 20 degrees. duration_ms is ignored for turns. forward/backward over a distance: "
         "give distance_cm and omit speed and duration_ms; the move is timed at a fixed "
         "calibrated speed (about 20 cm per second, at most 5 s per call). If the user gives "
-        "neither a distance nor a time for forward/backward, omit both: Jarvis goes 10 cm.",
+        "neither a distance nor a time for forward/backward, omit both: Jarvis goes 10 cm. "
+        "Turning around is a turn, not a backward drive: 'turn around', 'arkanı dön', "
+        "'geriye dön', 'geri dön' mean direction left with degrees 180. Use backward only "
+        "for driving in reverse ('geri git', 'go back').",
         PropertyList({
             Property("direction", kPropertyTypeString, "forward"),
             Property("speed", kPropertyTypeInteger, 100, 0, 100),
