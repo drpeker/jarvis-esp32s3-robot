@@ -7,7 +7,6 @@ dist/
 .devcontainer/
 sdkconfig.old
 sdkconfig
-dependencies.lock
 .env
 releases/
 main/assets/lang_config.h
@@ -23,4 +22,3 @@ mmap_generate_*.h
 Ekran Resmi*.png
 build-error.log
 sdkconfig.s3.backup
-eye/
