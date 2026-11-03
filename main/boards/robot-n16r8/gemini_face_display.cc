@@ -388,7 +388,12 @@ GeminiFaceDisplay::FaceState GeminiFaceDisplay::CurrentState(double now) {
     }
     if (device == kDeviceStateSpeaking) {
         thinking_since_ = -1;
-        return kSpeaking;
+        // The device is "speaking" from the server's tts start, also while the model is still
+        // working (tool calls, photo): move the mouth only while audio is really playing.
+        if (!Application::GetInstance().GetAudioService().IsPlaybackIdle()) {
+            voice_until_ = now + 0.5;
+        }
+        return now < voice_until_ ? kSpeaking : kThinking;
     }
     // The answer did not come in time: stop "thinking" (same as thinking_timeout_s).
     if (thinking_since_ >= 0 && now - thinking_since_ > kThinkingTimeoutS) {
@@ -453,7 +458,7 @@ void GeminiFaceDisplay::DrawFace(FaceState state, Emotion emotion, double now) {
         eye = kOfflineGray;
     } else if (state == kLooking) {
         eye = kFlash;
-    } else if (state == kListening) {
+    } else if (state == kListening || state == kThinking) {
         eye = kListen;
     }
     const uint16_t color = ToColor(eye);
@@ -475,10 +480,8 @@ void GeminiFaceDisplay::DrawFace(FaceState state, Emotion emotion, double now) {
         static const int kMouthHeights[] = {4, 8, 12, 16, 20};
         RoundedRect(cx_, mouth_y, 56, kMouthHeights[esp_random() % 5], accent, kNeutral, true);
     } else if (state == kThinking) {
-        for (int i = 0; i < 3; ++i) {
-            const double phase = std::fmod(now * 3 - i * 0.4, 2.0);
-            Circle(cx_ - 22 + i * 22, mouth_y - ((phase >= 0 && phase < 0.5) ? 5 : 0), 5, accent);
-        }
+        // Green eyes, still line mouth at the usual place (it does not follow the glance).
+        RoundedRect(cx_, mouth_y, 40, 6, ToColor(kListen), kNeutral, true);
     } else if (state == kListening) {
         Circle(cx_, mouth_y, 4 + 3 * std::fabs(std::sin(now * 4)), ToColor(kListen));
     }

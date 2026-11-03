@@ -93,6 +93,14 @@ private:
         // black once wake-word/LED boot work shifted the timing. Give it a solid delay.
         vTaskDelay(pdMS_TO_TICKS(150));
         ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
+        // The driver sends no gamma, so the panel used its defaults and blacks looked grey
+        // (BL is on 3V3, it cannot be dimmed). Gamma of the common 1.69" ST7789V2 module.
+        static const uint8_t kGammaPos[] = {0xD0, 0x08, 0x0E, 0x09, 0x09, 0x05, 0x31,
+                                            0x33, 0x48, 0x17, 0x14, 0x15, 0x31, 0x34};
+        static const uint8_t kGammaNeg[] = {0xD0, 0x08, 0x0E, 0x09, 0x09, 0x15, 0x31,
+                                            0x33, 0x48, 0x17, 0x14, 0x15, 0x31, 0x34};
+        esp_lcd_panel_io_tx_param(panel_io, 0xE0, kGammaPos, sizeof(kGammaPos));
+        esp_lcd_panel_io_tx_param(panel_io, 0xE1, kGammaNeg, sizeof(kGammaNeg));
         ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel, DISPLAY_INVERT_COLOR));
         ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY));
         ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y));

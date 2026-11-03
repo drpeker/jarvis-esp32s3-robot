@@ -987,6 +987,9 @@ std::string EspVideo::Explain(const std::string& question) {
     {
         esp_pthread_cfg_t enc_cfg = esp_pthread_get_default_config();
         enc_cfg.stack_size = 12288;
+        // PSRAM stack: by default pthread stacks come from internal RAM, and these 12 KB plus
+        // TLS for the upload left only ~250 bytes of internal RAM free during each photo.
+        enc_cfg.stack_alloc_caps = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT;
         enc_cfg.prio = 5;
         enc_cfg.thread_name = "jpeg_enc";
         esp_pthread_set_cfg(&enc_cfg);

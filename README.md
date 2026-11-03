@@ -15,7 +15,7 @@ xiaozhi README is kept as [README_xiaozhi.md](README_xiaozhi.md).
 
 - **Voice:** "Jarvis" wake word (on-device WakeNet), conversation through the xiaozhi server.
 - **Face:** animated eyes and mouth on a 240×240 ST7789 (blink, glances, emotions, speaking
-  mouth, thinking dots), Wi-Fi and battery icons, captions, camera preview, boot splash.
+  mouth, thinking face (green eyes, still line mouth; the mouth moves only while audio plays)), Wi-Fi and battery icons, captions, camera preview, boot splash.
 - **Motion:** two-track drive (MX1508). Turns are **closed-loop on the gyro**: turn until the
   measured angle is reached, brake, measure where it really stopped, correct. The stop lead is
   learned from each turn. Straight moves by time or by **distance** (timed at a fixed, calibrated speed; no distance or time given = 10 cm).
@@ -258,6 +258,10 @@ Stored tuning (NVS namespace `robot`): `min_lf/min_lr/min_rf/min_rr`, `gain_l/ga
 - **Camera without RESET/PWDN:** an OTA (software) restart does not power-cycle the OV2640;
   the firmware soft-resets it over SCCB at boot. If the camera ever stops (`DQBUF timed out`),
   power-cycle the robot.
+- **Internal RAM is tight** (TLS, camera, MCP). The photo JPEG encoder's 12 KB pthread stack
+  was in internal RAM and left ~250 bytes free during each upload (then resets); it is in PSRAM.
+- **Display gamma:** the ST7789 driver sends no gamma; the 1.69" ST7789V2 gamma is set at init
+  so black is darker (BL is on 3V3 and cannot be dimmed).
 - **Internal RAM is tight** (TLS, camera, MCP). Extra task stacks and buffers go to PSRAM;
   anything that writes flash (NVS, OTA) runs on the main task.
 - **Motor PWM frequency:** small gear motors on 1S lose a lot of torque at 10 kHz; 200 Hz

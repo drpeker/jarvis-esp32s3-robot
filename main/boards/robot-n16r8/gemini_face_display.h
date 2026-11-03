@@ -49,6 +49,7 @@ private:
     double emotion_until_ = 0;
     double thinking_since_ = -1;
     double flash_until_ = 0;
+    double voice_until_ = 0;  // speaking face while audio played within the last 0.5 s
     std::string caption_text_;
     CaptionColor caption_color_ = kCaptionUser;
     bool caption_sticky_ = false;  // setup messages stay until replaced
