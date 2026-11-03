@@ -11,6 +11,7 @@
 #include <freertos/task.h>
 
 #include "battery_gauge.h"
+#include "config.h"
 #include "motor_controller.h"
 #include "mpu6050.h"
 #include "net_console.h"
@@ -49,10 +50,12 @@ void PrintTuning() {
         "min_duty  L fwd %d  L rev %d  R fwd %d  R rev %d (%%)\r\n"
         "gain      L %d  R %d (%%)\r\n"
         "turn_speed %d%%  lead %.1f deg  kick %d ms  brake %d ms  pwm %d Hz  factor %d%%\r\n"
-        "forward accel axis %c%c\r\n",
+        "forward accel axis %c%c\r\n"
+        "distance: speed %d%%  20 cm = fwd %d ms  back %d ms\r\n",
         t.min_duty[0][0], t.min_duty[0][1], t.min_duty[1][0], t.min_duty[1][1], t.gain[0],
         t.gain[1], t.turn_speed, t.turn_lead_x10 / 10.0f, t.kick_ms, t.brake_ms, t.pwm_hz,
-        g_motor->SpeedFactor(), t.accel_sign < 0 ? '-' : '+', t.accel_axis == 1 ? 'Y' : 'X');
+        g_motor->SpeedFactor(), t.accel_sign < 0 ? '-' : '+', t.accel_axis == 1 ? 'Y' : 'X',
+        t.dist_speed, t.ms20[0], t.ms20[1]);
 }
 
 // Runs one gyro turn and waits for the result. Returns the final angle or -1.
@@ -167,6 +170,9 @@ bool SetTuningValue(MotorController::Tuning& t, const std::string& key, int valu
     else if (key == "pwm") t.pwm_hz = value;
     else if (key == "axis") t.accel_axis = value;
     else if (key == "axis_sign") t.accel_sign = value;
+    else if (key == "dist_speed") t.dist_speed = value;
+    else if (key == "ms20_fwd") t.ms20[0] = value;
+    else if (key == "ms20_back") t.ms20[1] = value;
     else return false;
     return true;
 }
@@ -196,7 +202,8 @@ void RegisterRobotConsole(MotorController* motor, Mpu6050* imu, BatteryGauge* ga
     console.AddCommand(
         "set",
         "set <min_lf|min_lr|min_rf|min_rr|gain_l|gain_r|turn_speed|lead(x0.1deg)|kick|brake|"
-        "pwm|axis(0=X,1=Y)|axis_sign(1|-1)> <value>  - change now (save to keep)",
+        "pwm|axis(0=X,1=Y)|axis_sign(1|-1)|dist_speed|ms20_fwd|ms20_back> <value>  - change now "
+        "(save to keep)",
         [](const NetConsole::Args& args) {
             if (args.size() < 3) {
                 Console().Print("usage: set <key> <value>\r\n");
@@ -264,26 +271,20 @@ void RegisterRobotConsole(MotorController* motor, Mpu6050* imu, BatteryGauge* ga
                        });
 
     console.AddCommand(
-        "dist", "dist <fwd|back> <cm>  - accelerometer distance drive, prints the estimate",
+        "dist", "dist <fwd|back> <cm>  - timed distance drive (ms20_fwd/ms20_back), measure it",
         [](const NetConsole::Args& args) {
-            if (g_imu == nullptr) {
-                Console().Print("IMU missing\r\n");
-                return;
-            }
             const bool back = args.size() > 1 && args[1] == "back";
-            const int cm = std::clamp(ArgInt(args, 2, 30), 1, 300);
-            const int speed = std::max(1, 100 * g_motor->SpeedFactor() / 100);
-            const uint32_t before = g_motor->DistanceCount();
-            const int s = back ? -speed : speed;
-            if (!g_motor->Drive(s, s, 5000, 0, cm)) {
+            const int cm = std::clamp(ArgInt(args, 2, 20), 1, 300);
+            const auto t = g_motor->GetTuning();
+            const uint32_t ms = std::min<uint32_t>(g_motor->DistanceMs(cm, back),
+                                                   MOTOR_MAX_RUN_TIME_MS);
+            const int s = back ? -t.dist_speed : t.dist_speed;
+            if (!g_motor->Drive(s, s, ms, 0, cm)) {
                 Console().Print("refused\r\n");
                 return;
             }
-            for (int i = 0; i < 80 && g_motor->DistanceCount() == before; ++i) {
-                vTaskDelay(pdMS_TO_TICKS(100));
-            }
-            Console().Print("dist %s %d cm -> estimated %.1f cm (measure it with a tape!)\r\n",
-                            back ? "back" : "fwd", cm, g_motor->LastDistanceMm() / 10.0f);
+            Console().Print("dist %s %d cm -> %u ms at %d%% (measure it with a tape)\r\n",
+                            back ? "back" : "fwd", cm, static_cast<unsigned>(ms), t.dist_speed);
         });
 
     console.AddCommand(

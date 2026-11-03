@@ -70,6 +70,12 @@
 #define MOTOR_SPEED_FACTOR_DEFAULT 50
 #define MOTOR_SPEED_FACTOR_MIN 25
 #define MOTOR_SPEED_FACTOR_MAX 100
+// Forward/backward distance moves are timed at a fixed speed; ms for 20 cm is calibrated
+// on the robot (console: set ms20_fwd / ms20_back, save).
+#define MOTOR_DIST_SPEED_PERCENT 50
+#define MOTOR_DIST_MS20_FWD 1050
+#define MOTOR_DIST_MS20_BACK 1000
+#define MOTOR_DIST_DEFAULT_CM 10
 
 // Turns run in place at a fixed power, independent of the speed factor. With the IMU
 // the angle is measured by the gyro; without it the turn falls back to timing:

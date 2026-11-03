@@ -18,7 +18,7 @@ xiaozhi README is kept as [README_xiaozhi.md](README_xiaozhi.md).
   mouth, thinking dots), Wi-Fi and battery icons, captions, camera preview, boot splash.
 - **Motion:** two-track drive (MX1508). Turns are **closed-loop on the gyro**: turn until the
   measured angle is reached, brake, measure where it really stopped, correct. The stop lead is
-  learned from each turn. Straight moves by time or by **distance** (accelerometer estimate).
+  learned from each turn. Straight moves by time or by **distance** (timed at a fixed, calibrated speed; no distance or time given = 10 cm).
   Commands from the AI are queued and run in order; "stop" interrupts.
 - **Body awareness:** detects being lifted, tipped over, bumped, and put down; stops the
   motors, shows a surprised face and reports the event to the AI.
@@ -155,7 +155,7 @@ The IP is printed in the log (`Console ready: nc 192.168.x.x 23`). One client at
 | `status` / `tune` | battery, IMU, motor tuning |
 | `turn <left\|right> [deg]` | gyro turn, prints the measured final angle |
 | `drive <fwd\|back> <ms> [speed]` | timed drive |
-| `dist <fwd\|back> <cm>` | accelerometer distance drive, prints the estimate |
+| `dist <fwd\|back> <cm>` | timed distance drive (`ms20_fwd` / `ms20_back`), measure it with a tape |
 | `m <left%> <right%> <ms>` | raw PWM test (no mapping), prints the yaw rate |
 | `stop` | stop now, clear the queue |
 | `imu [s]` | yaw rate and heading |
@@ -164,7 +164,7 @@ The IP is printed in the log (`Console ready: nc 192.168.x.x 23`). One client at
 | `gyro_scale <x>` | set and save a yaw scale factor (1.0 = raw) |
 | `cal [motors\|turns]` | automatic calibration (robot on the floor) |
 | `cal_axis` | find which accel axis points forward (short drive) |
-| `set <key> <value>` / `save` | change a tuning value / store it in NVS |
+| `set <key> <value>` / `save` | change a tuning value / store it in NVS (straight moves: `dist_speed`, `ms20_fwd`, `ms20_back` = ms for 20 cm) |
 | `ota <url>` | download a firmware image and reboot into it |
 | `reboot` | restart |
 
@@ -205,7 +205,7 @@ Stored tuning (NVS namespace `robot`): `min_lf/min_lr/min_rf/min_rr`, `gain_l/ga
 
 | Tool | Purpose |
 | --- | --- |
-| `self.robot.drive` | `direction` forward/backward/left/right, `speed`, `duration_ms`, `degrees` (default 20), `distance_cm` |
+| `self.robot.drive` | `direction` forward/backward/left/right, `speed`, `duration_ms`, `degrees` (default 20), `distance_cm` (forward/backward without distance or time: 10 cm) |
 | `self.robot.run_motor` | one track only |
 | `self.robot.stop` | stop and clear the queue |
 | `self.robot.set_speed_factor` | forward/backward speed factor (saved) |
@@ -262,6 +262,8 @@ Stored tuning (NVS namespace `robot`): `min_lf/min_lr/min_rf/min_rr`, `gain_l/ga
   anything that writes flash (NVS, OTA) runs on the main task.
 - **Motor PWM frequency:** small gear motors on 1S lose a lot of torque at 10 kHz; 200 Hz
   cut the dead band from ~70% to ~30%.
+- Distance by double-integrating the accelerometer was dropped: when the start was measured
+  low the robot drove to the 5 s timeout (15 cm asked, ~1 m driven). Straight moves are timed.
 - The accelerometer of this MPU-6050 reads ~0.93 g at rest; the code uses the measured rest
   value instead of assuming 1 g.
 

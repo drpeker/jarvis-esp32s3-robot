@@ -26,6 +26,8 @@ public:
         int pwm_hz;
         int accel_axis;  // IMU axis pointing forward: 0 = X, 1 = Y
         int accel_sign;  // +1 or -1
+        int dist_speed;  // logical speed of forward/backward distance moves
+        int ms20[2];     // run time for 20 cm at dist_speed: [0] forward, [1] backward
     };
 
     MotorController(gpio_num_t left_in1, gpio_num_t left_in2, gpio_num_t right_in1,
@@ -33,7 +35,8 @@ public:
     ~MotorController();
 
     // target_degrees > 0 with a gyro attached: run until the gyro has measured that
-    // much rotation (duration_ms is then only the safety timeout).
+    // much rotation (duration_ms is then only the safety timeout). target_cm > 0: timed
+    // distance move (duration_ms from DistanceMs), braked at the end.
     bool Drive(int left_speed, int right_speed, uint32_t duration_ms, int target_degrees = 0,
                int target_cm = 0);
     void Stop();
@@ -56,9 +59,9 @@ public:
     // counter that increases when a gyro turn finishes.
     int LastTurnFinalX10() const { return last_turn_final_x10_.load(); }
     uint32_t TurnCount() const { return turn_count_.load(); }
-    // Result of the last accelerometer distance drive (estimated millimetres).
-    int LastDistanceMm() const { return last_distance_mm_.load(); }
-    uint32_t DistanceCount() const { return distance_count_.load(); }
+    // Run time for a forward/backward distance move at tuning dist_speed, from the 20 cm
+    // calibration (not capped).
+    uint32_t DistanceMs(int cm, bool backward) const;
     bool HasGyro() const { return gyro_ != nullptr && gyro_->HeadingOk(); }
 
 private:
@@ -90,8 +93,6 @@ private:
     std::atomic<bool> raw_mode_{false};
     std::atomic<int> last_turn_final_x10_{0};
     std::atomic<uint32_t> turn_count_{0};
-    std::atomic<int> last_distance_mm_{0};
-    std::atomic<uint32_t> distance_count_{0};
     Tuning tuning_;
     Mpu6050* gyro_ = nullptr;
     float coast_lead_ = 7.0f;  // learned from the turns (degrees after the stop point)
@@ -103,7 +104,6 @@ private:
     bool RunGyroTurn(Command turn, Command& next);
     void SetSpeedsNow(int left_speed, int right_speed);
     bool StopRequested(Command& next, TickType_t wait);
-    bool RunDistanceDrive(Command drive, Command& next);
     void Brake();
     void SetMotor(int speed, int motor, bool raw = false);
     void SetDuty(ledc_channel_t channel, uint32_t duty);

@@ -147,6 +147,9 @@ void MotorController::LoadSettings() {
     tuning_.pwm_hz = settings.GetInt("pwm_hz", MOTOR_PWM_FREQUENCY_HZ);
     tuning_.accel_axis = settings.GetInt("acc_axis", 0);
     tuning_.accel_sign = settings.GetInt("acc_sign", 1);
+    tuning_.dist_speed = settings.GetInt("dist_spd", MOTOR_DIST_SPEED_PERCENT);
+    tuning_.ms20[0] = settings.GetInt("ms20_fwd", MOTOR_DIST_MS20_FWD);
+    tuning_.ms20[1] = settings.GetInt("ms20_back", MOTOR_DIST_MS20_BACK);
     ESP_LOGI(TAG,
              "Speed factor %d%%, turn %d ms/deg; min duty L %d/%d R %d/%d, gain L %d R %d, "
              "turn %d%%, lead %.1f, kick %d ms, brake %d ms, PWM %d Hz",
@@ -176,6 +179,10 @@ void MotorController::SetTuning(const Tuning& tuning, bool save) {
     tuning_.pwm_hz = std::clamp(tuning_.pwm_hz, 100, 20000);
     tuning_.accel_axis = tuning_.accel_axis == 1 ? 1 : 0;
     tuning_.accel_sign = tuning_.accel_sign < 0 ? -1 : 1;
+    tuning_.dist_speed = std::clamp(tuning_.dist_speed, 1, 100);
+    for (int& ms : tuning_.ms20) {
+        ms = std::clamp(ms, 100, 5000);
+    }
     if (tuning_.pwm_hz != old_pwm_hz) {
         ledc_set_freq(kSpeedMode, kTimer, tuning_.pwm_hz);
     }
@@ -197,6 +204,9 @@ void MotorController::SetTuning(const Tuning& tuning, bool save) {
     settings.SetInt("pwm_hz", tuning_.pwm_hz);
     settings.SetInt("acc_axis", tuning_.accel_axis);
     settings.SetInt("acc_sign", tuning_.accel_sign);
+    settings.SetInt("dist_spd", tuning_.dist_speed);
+    settings.SetInt("ms20_fwd", tuning_.ms20[0]);
+    settings.SetInt("ms20_back", tuning_.ms20[1]);
     ESP_LOGI(TAG, "Motor tuning saved");
 }
 
@@ -245,11 +255,6 @@ void MotorController::TaskLoop() {
             pending = RunGyroTurn(command, command);
             continue;
         }
-        if (command.target_cm > 0 && gyro_ != nullptr) {
-            pending = RunDistanceDrive(command, command);
-            continue;
-        }
-
         // Timed move: runs to the end unless a stop arrives; queued moves wait their turn.
         ApplySpeeds(command.left_speed, command.right_speed);
         const TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(command.duration_ms);
@@ -260,9 +265,17 @@ void MotorController::TaskLoop() {
             }
         }
         if (!pending) {
-            ApplySpeeds(0, 0);
+            if (command.target_cm > 0) {
+                Brake();  // distance moves stop the same way every time
+            } else {
+                ApplySpeeds(0, 0);
+            }
         }
     }
+}
+
+uint32_t MotorController::DistanceMs(int cm, bool backward) const {
+    return static_cast<uint32_t>(std::max(cm, 0)) * tuning_.ms20[backward ? 1 : 0] / 20;
 }
 
 // True (and the stop command in `next`) when Stop() was called; otherwise waits `wait`.
@@ -419,68 +432,6 @@ void MotorController::SetSpeedsNow(int left_speed, int right_speed) {
     moving_.store(left_speed != 0 || right_speed != 0);
 }
 
-// Drives straight until the accelerometer estimate reaches the distance. The IMU service
-// measures the accel bias with the robot standing, then integrates every 10 ms sample to
-// speed (travel direction only) and distance. Rough: +-20..30%.
-bool MotorController::RunDistanceDrive(Command drive, Command& next) {
-    const TickType_t poll_ticks = std::max<TickType_t>(1, pdMS_TO_TICKS(MOTOR_TURN_SAMPLE_MS));
-    const bool backward = drive.left_speed < 0;
-    ApplySpeeds(0, 0);
-    vTaskDelay(pdMS_TO_TICKS(150));
-    gyro_->StartOdometer(tuning_.accel_axis, tuning_.accel_sign, backward ? -1.0f : 1.0f);
-    for (int i = 0; i < 100 && !gyro_->OdometerReady(); ++i) {
-        vTaskDelay(1);
-    }
-    if (!gyro_->OdometerReady()) {
-        gyro_->StopOdometer();
-        ESP_LOGW(TAG, "Distance drive: IMU odometer not ready");
-        return false;
-    }
-
-    const float target_m = drive.target_cm / 100.0f;
-    const int64_t start_us = esp_timer_get_time();
-    const int64_t deadline_us = start_us + static_cast<int64_t>(drive.duration_ms) * 1000;
-    bool reached = false;
-    // No kick: it only adds a jolt; the 80% floor already starts the tracks.
-    const int kick_ms = tuning_.kick_ms;
-    tuning_.kick_ms = 0;
-    ApplySpeeds(drive.left_speed, drive.right_speed);
-    tuning_.kick_ms = kick_ms;
-    while (true) {
-        if (StopRequested(next, poll_ticks)) {
-            Brake();
-            const float distance = gyro_->OdometerMeters();
-            gyro_->StopOdometer();
-            ESP_LOGI(TAG, "Distance drive interrupted at %.1f cm", distance * 100);
-            last_distance_mm_.store(static_cast<int>(distance * 1000));
-            distance_count_.fetch_add(1);
-            return true;
-        }
-        if (gyro_->OdometerMeters() >= target_m) {
-            reached = true;
-            break;
-        }
-        if (esp_timer_get_time() >= deadline_us) {
-            break;
-        }
-    }
-    const float speed = gyro_->OdometerSpeed();
-    const float distance = gyro_->OdometerMeters();
-    Brake();
-    gyro_->StopOdometer();
-    const float seconds = (esp_timer_get_time() - start_us) / 1e6f;
-    last_distance_mm_.store(static_cast<int>(distance * 1000));
-    distance_count_.fetch_add(1);
-    if (reached) {
-        ESP_LOGI(TAG, "Distance drive: target=%d cm estimated=%.1f cm in %.2f s (%.1f cm/s)",
-                 drive.target_cm, distance * 100, seconds, speed * 100);
-    } else {
-        ESP_LOGW(TAG, "Distance drive timed out: target=%d cm estimated only %.1f cm in %.2f s",
-                 drive.target_cm, distance * 100, seconds);
-    }
-    return false;
-}
-
 // MX1508 brake: both inputs high shorts the motor, stopping it faster than coasting.
 void MotorController::Brake() {
     for (size_t i = 0; i < 4; ++i) {
@@ -595,12 +546,13 @@ void MotorController::RegisterMcpTools() {
         "self.robot.set_speed_factor); duration_ms is limited for safety. left/right: give "
         "the angle in degrees; if the user does not say an angle, omit degrees and the robot "
         "turns 20 degrees. duration_ms is ignored for turns. forward/backward over a distance: "
-        "give distance_cm (estimated with the accelerometer, roughly +-25%) and omit "
-        "duration_ms.",
+        "give distance_cm and omit speed and duration_ms; the move is timed at a fixed "
+        "calibrated speed (about 20 cm per second, at most 5 s per call). If the user gives "
+        "neither a distance nor a time for forward/backward, omit both: Jarvis goes 10 cm.",
         PropertyList({
             Property("direction", kPropertyTypeString, "forward"),
             Property("speed", kPropertyTypeInteger, 100, 0, 100),
-            Property("duration_ms", kPropertyTypeInteger, 800, 100, MOTOR_MAX_RUN_TIME_MS),
+            Property("duration_ms", kPropertyTypeInteger, 0, 0, MOTOR_MAX_RUN_TIME_MS),
             Property("degrees", kPropertyTypeInteger, MOTOR_TURN_DEFAULT_DEGREES, 1, 360),
             Property("distance_cm", kPropertyTypeInteger, 0, 0, 300),
         }),
@@ -609,9 +561,13 @@ void MotorController::RegisterMcpTools() {
             const int speed = properties["speed"].value<int>();
             int duration_ms = properties["duration_ms"].value<int>();
             const int degrees = properties["degrees"].value<int>();
-            const int distance_cm = properties["distance_cm"].value<int>();
+            int distance_cm = properties["distance_cm"].value<int>();
+            if (distance_cm == 0 && duration_ms == 0 &&
+                (direction == "forward" || direction == "backward")) {
+                distance_cm = MOTOR_DIST_DEFAULT_CM;  // no distance or time given
+            }
             const bool by_distance =
-                distance_cm > 0 && HasGyro() && (direction == "forward" || direction == "backward");
+                distance_cm > 0 && (direction == "forward" || direction == "backward");
             const bool turning = direction == "left" || direction == "right";
             if (IsMotionLocked()) {
                 return "{\"ok\":false,\"error\":\"battery_critical\",\"message\":\"Battery is "
@@ -620,7 +576,9 @@ void MotorController::RegisterMcpTools() {
             }
             int applied_speed = 0;
 
-            if (direction == "forward" || direction == "backward") {
+            if (by_distance) {
+                applied_speed = tuning_.dist_speed;
+            } else if (direction == "forward" || direction == "backward") {
                 applied_speed = speed * speed_factor_.load() / 100;
                 if (speed != 0) {
                     applied_speed = std::max(applied_speed, 1);
@@ -647,7 +605,8 @@ void MotorController::RegisterMcpTools() {
             }
 
             if (by_distance) {
-                duration_ms = MOTOR_MAX_RUN_TIME_MS;  // safety timeout only
+                duration_ms = static_cast<int>(std::min<uint32_t>(
+                    DistanceMs(distance_cm, direction == "backward"), MOTOR_MAX_RUN_TIME_MS));
             }
             if (!Drive(left_speed, right_speed, static_cast<uint32_t>(duration_ms),
                        turning ? degrees : 0, by_distance ? distance_cm : 0)) {
@@ -662,8 +621,7 @@ void MotorController::RegisterMcpTools() {
                                  "\",\"applied_pwm_percent\":" + std::to_string(applied_speed);
             if (by_distance) {
                 result += ",\"distance_cm\":" + std::to_string(distance_cm) +
-                          ",\"distance_note\":\"estimated with the accelerometer, roughly "
-                          "+-25%\"";
+                          ",\"distance_note\":\"timed at the calibrated speed\"";
             }
             if (turning) {
                 result += ",\"degrees\":" + std::to_string(degrees) + ",\"turn_mode\":\"" +
