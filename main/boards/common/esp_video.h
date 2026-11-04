@@ -3,6 +3,7 @@
 
 #include <lvgl.h>
 #include <thread>
+#include <mutex>
 #include <memory>
 #include <vector>
 
@@ -42,12 +43,28 @@ private:
     std::thread encoder_thread_;
 
     bool RestartStream();
+    // Stream only while taking a photo (opt-in): between photos the stream is off and the
+    // sensor in standby, so no camera DMA / VSYNC interrupts run for hours.
+    bool stream_on_demand_ = false;
+    int drop_frames_ = -1;
+    bool StartStream();
+    void StopStream();
+    bool CaptureFrames();
 
 public:
     EspVideo(const esp_video_init_config_t& config);
     ~EspVideo() override;
 
-    bool IsReady() const { return streaming_on_ && video_fd_ >= 0; }
+    bool IsReady() const { return (streaming_on_ || stream_on_demand_) && video_fd_ >= 0; }
+    void EnableStreamOnDemand();
+    void SetDropFrames(int frames) { drop_frames_ = frames; }  // <0: default
+    // One lock for every capture path (AI photo tool and the console test photo).
+    std::mutex* GetMutex() override { return &capture_mutex_; }
+
+private:
+    std::mutex capture_mutex_;
+
+public:
     virtual void SetExplainUrl(const std::string& url, const std::string& token);
     virtual bool Capture();
     // 翻转控制函数

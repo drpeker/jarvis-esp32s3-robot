@@ -267,22 +267,6 @@ void RegisterRobotConsole(MotorController* motor, Mpu6050* imu, BatteryGauge* ga
         Console().Print("said: %s\r\n", text.c_str());
     });
 
-    console.AddCommand("camera", "camera on|off  - enable/disable the camera at boot (then reboot)", [](const NetConsole::Args& args) {
-        if (args.size() < 2 || (args[1] != "on" && args[1] != "off")) {
-            Settings settings("robot", false);
-            Console().Print("camera at boot: %s\r\n", settings.GetInt("cam_en", 1) ? "on" : "off");
-            return;
-        }
-        // NVS writes need an internal-RAM stack; the console task's stack is in PSRAM.
-        const int enabled = args[1] == "on" ? 1 : 0;
-        Application::GetInstance().Schedule([enabled]() {
-            Settings settings("robot", true);
-            settings.SetInt("cam_en", enabled);
-        });
-        vTaskDelay(pdMS_TO_TICKS(300));
-        Console().Print("camera at boot: %s (reboot to apply)\r\n", args[1].c_str());
-    });
-
     console.AddCommand("tune", "tune  - show motor tuning", [](const auto&) { PrintTuning(); });
 
     console.AddCommand(

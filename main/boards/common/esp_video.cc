@@ -20,6 +20,8 @@
 #include "board.h"
 #include "display.h"
 #include "esp_video.h"
+
+#include <esp_timer.h>
 #include "esp_jpeg_common.h"
 #include "jpg/image_to_jpeg.h"
 #include "jpg/jpeg_to_image.h"
@@ -408,17 +410,75 @@ void EspVideo::SetExplainUrl(const std::string& url, const std::string& token) {
     explain_token_ = token;
 }
 
+void EspVideo::EnableStreamOnDemand() {
+    stream_on_demand_ = true;
+    StopStream();
+}
+
+void EspVideo::StopStream() {
+    if (video_fd_ < 0 || !streaming_on_) {
+        return;
+    }
+    int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (ioctl(video_fd_, VIDIOC_STREAMOFF, &type) != 0) {
+        ESP_LOGE(TAG, "VIDIOC_STREAMOFF failed, errno=%d(%s)", errno, strerror(errno));
+    }
+    streaming_on_ = false;
+}
+
+// STREAMOFF hands every buffer back, so queue them all again before STREAMON.
+bool EspVideo::StartStream() {
+    if (video_fd_ < 0 || mmap_buffers_.empty()) {
+        return false;
+    }
+    if (streaming_on_) {
+        return true;
+    }
+    for (uint32_t i = 0; i < mmap_buffers_.size(); ++i) {
+        struct v4l2_buffer buf = {};
+        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buf.memory = V4L2_MEMORY_MMAP;
+        buf.index = i;
+        if (ioctl(video_fd_, VIDIOC_QBUF, &buf) != 0) {
+            ESP_LOGE(TAG, "VIDIOC_QBUF[%lu] failed, errno=%d(%s)", static_cast<unsigned long>(i), errno,
+                     strerror(errno));
+            return false;
+        }
+    }
+    int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (ioctl(video_fd_, VIDIOC_STREAMON, &type) != 0) {
+        ESP_LOGE(TAG, "VIDIOC_STREAMON failed, errno=%d(%s)", errno, strerror(errno));
+        return false;
+    }
+    streaming_on_ = true;
+    return true;
+}
+
 bool EspVideo::Capture() {
     if (encoder_thread_.joinable()) {
         encoder_thread_.join();
     }
+    if (!stream_on_demand_) {
+        return CaptureFrames();
+    }
+    const int64_t t0 = esp_timer_get_time();
+    bool ok = StartStream() && CaptureFrames();
+    StopStream();
+    ESP_LOGI(TAG, "Capture on demand: %s in %d ms", ok ? "ok" : "FAILED",
+             static_cast<int>((esp_timer_get_time() - t0) / 1000));
+    return ok;
+}
 
+bool EspVideo::CaptureFrames() {
     if (!streaming_on_ || video_fd_ < 0) {
         return false;
     }
 
     bool recovery_attempted = false;
-    for (int i = 0; i < 3;) {
+    // Frames to drop first: the exposure settles over the first frames, and after standby
+    // (stream on demand) it needs about a second at 6 fps.
+    const int keep = drop_frames_ >= 0 ? drop_frames_ : (stream_on_demand_ ? 7 : 2);
+    for (int i = 0; i <= keep;) {
         struct v4l2_buffer buf = {};
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         buf.memory = V4L2_MEMORY_MMAP;
@@ -431,7 +491,7 @@ bool EspVideo::Capture() {
             }
             return false;
         }
-        if (i == 2) {
+        if (i == keep) {
             // 保存帧副本到PSRAM
             if (frame_.data) {
                 heap_caps_free(frame_.data);
@@ -763,6 +823,18 @@ bool EspVideo::Capture() {
             return false;
         }
         ++i;
+    }
+
+    if (frame_.data && (frame_.format == V4L2_PIX_FMT_YUYV || frame_.format == V4L2_PIX_FMT_UYVY)) {
+        // Mean brightness (luma) for the log: tells a dark photo from a dark room.
+        const size_t y0 = frame_.format == V4L2_PIX_FMT_YUYV ? 0 : 1;
+        uint64_t sum = 0;
+        size_t n = 0;
+        for (size_t k = y0; k < frame_.len; k += 64) {
+            sum += frame_.data[k];
+            ++n;
+        }
+        ESP_LOGI(TAG, "Photo mean luma %u/255 after %d dropped frames", n ? (unsigned)(sum / n) : 0u, keep);
     }
 
     // 显示预览图片

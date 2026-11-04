@@ -2,7 +2,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <sstream>
 
 #include <esp_heap_caps.h>
 #include <esp_log.h>
@@ -17,6 +16,14 @@
 namespace {
 vprintf_like_t g_original_vprintf = nullptr;
 constexpr size_t kLogBufferSize = 6144;
+
+// Interrupts masked (portENTER_CRITICAL raises PS.INTLEVEL): taking a semaphore or touching a
+// stream buffer there is not allowed, so such log lines only go to the UART.
+bool InCriticalSection() {
+    uint32_t ps;
+    __asm__ volatile("rsr %0, ps" : "=r"(ps));
+    return (ps & 0xF) != 0;
+}
 }  // namespace
 
 NetConsole& NetConsole::GetInstance() {
@@ -68,6 +75,7 @@ int NetConsole::LogHook(const char* format, va_list args) {
     // Never block a logging task; drop the line when busy or nobody is listening. The
     // sender task's own logs are skipped so a send error cannot feed itself.
     if (console.client_fd_ < 0 || !console.log_enabled_ || xPortInIsrContext() ||
+        xTaskGetSchedulerState() != taskSCHEDULER_RUNNING || InCriticalSection() ||
         xTaskGetCurrentTaskHandle() == console.sender_task_) {
         return result;
     }
@@ -172,11 +180,16 @@ void NetConsole::ServerLoop() {
 }
 
 void NetConsole::HandleLine(const std::string& line) {
+    // Plain split on spaces (std::istringstream pulled in the C++ locale machinery, which
+    // once crashed on its first use in this task).
     Args args;
-    std::istringstream stream(line);
-    std::string word;
-    while (stream >> word) {
-        args.push_back(word);
+    size_t i = 0;
+    while (i < line.size()) {
+        while (i < line.size() && line[i] == ' ') ++i;
+        size_t j = i;
+        while (j < line.size() && line[j] != ' ') ++j;
+        if (j > i) args.push_back(line.substr(i, j - i));
+        i = j;
     }
     if (args.empty()) {
         return;

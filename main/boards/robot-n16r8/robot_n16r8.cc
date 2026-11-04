@@ -8,6 +8,9 @@
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_vendor.h>
 #include <esp_log.h>
+#include <mutex>
+#include <esp_heap_caps.h>
+#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/idf_additions.h>
 #include <freertos/task.h>
@@ -397,11 +400,7 @@ public:
         InitializeDisplay();
         InitializeButton();
         InitializeI2c();
-        if (Settings("robot", false).GetInt("cam_en", 1)) {
-            InitializeCamera();
-        } else {
-            ESP_LOGW(TAG, "Camera disabled (console: camera on)");
-        }
+        InitializeCamera();
         ScanI2cBus();
         InitializeImu();
         motor_controller_ = new MotorController(MOTOR_LEFT_IN1_PIN, MOTOR_LEFT_IN2_PIN,
@@ -414,6 +413,24 @@ public:
         }
         NetConsole::GetInstance().Start(23);
         RegisterRobotConsole(motor_controller_, imu_, battery_gauge_);
+        NetConsole::GetInstance().AddCommand(
+            "photo", "photo [drop_frames]  - test photo through the AI photo path (result and time)",
+            [this](const NetConsole::Args& args) {
+                if (camera_ == nullptr) {
+                    NetConsole::GetInstance().Print("camera not available\r\n");
+                    return;
+                }
+                std::lock_guard<std::mutex> lock(*camera_->GetMutex());
+                camera_->SetDropFrames(args.size() > 1 ? std::atoi(args[1].c_str()) : -1);
+                const int64_t t0 = esp_timer_get_time();
+                const bool ok = camera_->Capture();
+                camera_->SetDropFrames(-1);
+                NetConsole::GetInstance().Print("photo %s in %d ms, internal RAM free %u (min %u)\r\n",
+                                                ok ? "OK" : "FAILED",
+                                                static_cast<int>((esp_timer_get_time() - t0) / 1000),
+                                                heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+                                                heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
+            });
         ESP_LOGI(TAG, "Robot (N16R8) board initialized");
     }
 
