@@ -21,8 +21,26 @@ private:
     size_t encode_buf_size_ = 0;
     std::mutex mutex_;
 
+    // Photo on demand (opt-in): the driver is started for each photo and stopped right
+    // after, so the sensor gets a clean reset with XCLK running every time and no camera
+    // DMA runs between photos. The JPEG made by the sensor is kept here for Explain().
+    bool on_demand_ = false;
+    camera_config_t config_ = {};
+    bool hmirror_ = false;
+    bool vflip_ = false;
+    int drop_frames_ = 3;
+    std::vector<uint8_t> jpeg_;
+    uint16_t jpeg_width_ = 0;
+    uint16_t jpeg_height_ = 0;
+    bool StartDriver();
+    void ShowPreview();
+
 public:
     Esp32Camera(const camera_config_t& config);
+    // on_demand: see above. The camera is probed once here and then stopped.
+    Esp32Camera(const camera_config_t& config, bool on_demand);
+    bool IsReady() const { return streaming_on_; }
+    void SetDropFrames(int frames) { drop_frames_ = frames; }
     ~Esp32Camera();
 
     virtual void SetExplainUrl(const std::string& url, const std::string& token) override;

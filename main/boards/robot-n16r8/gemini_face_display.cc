@@ -190,7 +190,9 @@ void GeminiFaceDisplay::SetupUI() {
     preview_box_ = lv_obj_create(screen);
     lv_obj_remove_style_all(preview_box_);
     lv_obj_set_pos(preview_box_, 0, face_y0_);
-    lv_obj_set_size(preview_box_, w, face_y1_ - face_y0_ + 1);
+    // Below the status bar down to the bottom edge (over the captions for the 3 s it shows),
+    // so a 4:3 photo can use the full screen width.
+    lv_obj_set_size(preview_box_, w, h - face_y0_);
     lv_obj_set_style_bg_color(preview_box_, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(preview_box_, LV_OPA_COVER, 0);
     lv_obj_clear_flag(preview_box_, LV_OBJ_FLAG_SCROLLABLE);
@@ -603,7 +605,7 @@ bool GeminiFaceDisplay::UpdatePreview(double now) {
             lv_image_set_src(preview_obj_, dsc);
             if (dsc->header.w > 0 && dsc->header.h > 0) {
                 // Fit inside the face area keeping the aspect ratio (never enlarge).
-                const int box_h = face_y1_ - face_y0_ + 1;
+                const int box_h = height_ - face_y0_;
                 const int scale = std::min({256, 256 * width_ / static_cast<int>(dsc->header.w),
                                             256 * box_h / static_cast<int>(dsc->header.h)});
                 lv_image_set_scale(preview_obj_, scale);

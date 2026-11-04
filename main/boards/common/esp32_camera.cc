@@ -13,6 +13,8 @@
 #include "mcp_server.h"
 #include "system_info.h"
 #include "jpg/image_to_jpeg.h"
+#include "img_converters.h"
+#include <esp_timer.h>
 #include "esp_timer.h"
 
 #define TAG "Esp32Camera"
@@ -33,6 +35,68 @@ Esp32Camera::Esp32Camera(const camera_config_t &config) {
     }
 
     streaming_on_ = true;
+}
+
+Esp32Camera::Esp32Camera(const camera_config_t &config, bool on_demand) : on_demand_(on_demand), config_(config) {
+    if (!on_demand_) {
+        // Same as the one-argument constructor.
+        esp_err_t err = esp_camera_init(&config);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "esp_camera_init failed with error 0x%x", err);
+            return;
+        }
+        streaming_on_ = true;
+        return;
+    }
+    // Probe once: the camera is available if the driver starts.
+    if (StartDriver()) {
+        esp_camera_deinit();
+        streaming_on_ = true;
+        ESP_LOGI(TAG, "Camera ready (photo on demand)");
+    }
+}
+
+bool Esp32Camera::StartDriver() {
+    esp_err_t err = esp_camera_init(&config_);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_camera_init failed with error 0x%x", err);
+        esp_camera_deinit();
+        return false;
+    }
+    if (sensor_t *s = esp_camera_sensor_get()) {
+        s->set_hmirror(s, hmirror_ ? 1 : 0);
+        s->set_vflip(s, vflip_ ? 1 : 0);
+    }
+    return true;
+}
+
+// Small RGB565 copy of the JPEG for the face screen, and the mean brightness for the log.
+void Esp32Camera::ShowPreview() {
+    const int w = jpeg_width_ / 2, h = jpeg_height_ / 2;  // 320x240, the display scales it to the width
+    const size_t size = (size_t)w * h * 2;
+    uint8_t *rgb = (uint8_t *)heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (rgb == nullptr) {
+        return;
+    }
+    if (!jpg2rgb565(jpeg_.data(), jpeg_.size(), rgb, JPG_SCALE_2X)) {
+        heap_caps_free(rgb);
+        return;
+    }
+    // jpg2rgb565 already writes native (little-endian) RGB565, as LVGL wants it.
+    const uint16_t *px = (const uint16_t *)rgb;
+    uint64_t luma = 0;
+    for (int i = 0; i < w * h; ++i) {
+        const uint16_t v = px[i];
+        luma += ((v >> 11) * 255 / 31 * 30 + ((v >> 5) & 63) * 255 / 63 * 59 + (v & 31) * 255 / 31 * 11) / 100;
+    }
+    ESP_LOGI(TAG, "Photo %dx%d, %u bytes JPEG, mean luma %u/255", jpeg_width_, jpeg_height_,
+             (unsigned)jpeg_.size(), (unsigned)(w > 0 && h > 0 ? luma / (w * h) : 0));
+    auto display = dynamic_cast<LvglDisplay *>(Board::GetInstance().GetDisplay());
+    if (display != nullptr) {
+        display->SetPreviewImage(std::make_unique<LvglAllocatedImage>(rgb, size, w, h, w * 2, LV_COLOR_FORMAT_RGB565));
+    } else {
+        heap_caps_free(rgb);
+    }
 }
 
 Esp32Camera::~Esp32Camera() {
@@ -59,6 +123,35 @@ void Esp32Camera::SetExplainUrl(const std::string &url, const std::string &token
 bool Esp32Camera::Capture() {
     if (!streaming_on_) {
         return false;
+    }
+    if (on_demand_) {
+        const int64_t t0 = esp_timer_get_time();
+        if (!StartDriver()) {
+            return false;
+        }
+        bool ok = false;
+        // The first frames after the start: exposure and white balance still settling.
+        for (int i = 0; i <= drop_frames_; ++i) {
+            camera_fb_t *fb = esp_camera_fb_get();
+            if (fb == nullptr) {
+                ESP_LOGE(TAG, "Camera capture failed (frame %d)", i);
+                break;
+            }
+            if (i == drop_frames_) {
+                jpeg_.assign(fb->buf, fb->buf + fb->len);
+                jpeg_width_ = fb->width;
+                jpeg_height_ = fb->height;
+                ok = fb->format == PIXFORMAT_JPEG && !jpeg_.empty();
+            }
+            esp_camera_fb_return(fb);
+        }
+        esp_camera_deinit();
+        ESP_LOGI(TAG, "Photo on demand %s in %d ms (%d frames dropped)", ok ? "ok" : "FAILED",
+                 (int)((esp_timer_get_time() - t0) / 1000), drop_frames_);
+        if (ok) {
+            ShowPreview();
+        }
+        return ok;
     }
 
     // A single-buffer JPEG camera must only be acquired once per request.
@@ -126,6 +219,10 @@ bool Esp32Camera::Capture() {
 }
 
 bool Esp32Camera::SetHMirror(bool enabled) {
+    hmirror_ = enabled;
+    if (on_demand_) {
+        return true;  // applied at every start
+    }
     sensor_t *s = esp_camera_sensor_get();
     if (!s) {
         return false;
@@ -135,6 +232,10 @@ bool Esp32Camera::SetHMirror(bool enabled) {
 }
 
 bool Esp32Camera::SetVFlip(bool enabled) {
+    vflip_ = enabled;
+    if (on_demand_) {
+        return true;  // applied at every start
+    }
     sensor_t *s = esp_camera_sensor_get();
     if (!s) {
         return false;
@@ -153,7 +254,11 @@ std::string Esp32Camera::Explain(const std::string &question) {
         throw std::runtime_error("Image explain URL or token is not set");
     }
 
-    if (current_fb_ == nullptr) {
+    if (on_demand_) {
+        if (jpeg_.empty()) {
+            throw std::runtime_error("No camera frame captured");
+        }
+    } else if (current_fb_ == nullptr) {
         throw std::runtime_error("No camera frame captured");
     }
 
@@ -169,9 +274,11 @@ std::string Esp32Camera::Explain(const std::string &question) {
         }
     } frame_guard{current_fb_};
 
-    const uint16_t frame_width = current_fb_->width;
-    const uint16_t frame_height = current_fb_->height;
-    const pixformat_t frame_format = current_fb_->format;
+    const uint16_t frame_width = on_demand_ ? jpeg_width_ : current_fb_->width;
+    const uint16_t frame_height = on_demand_ ? jpeg_height_ : current_fb_->height;
+    const pixformat_t frame_format = on_demand_ ? PIXFORMAT_JPEG : current_fb_->format;
+    const uint8_t* jpeg_data = on_demand_ ? jpeg_.data() : (current_fb_ ? current_fb_->buf : nullptr);
+    const size_t jpeg_len = on_demand_ ? jpeg_.size() : (current_fb_ ? current_fb_->len : 0);
 
     auto network = Board::GetInstance().GetNetwork();
     auto http = network->CreateHttp(3);
@@ -214,9 +321,8 @@ std::string Esp32Camera::Explain(const std::string &question) {
     if (frame_format == PIXFORMAT_JPEG) {
         // OV2640 already produced a complete JPEG. Sending that framebuffer
         // directly avoids a second encoder task, queue and full-image copy.
-        if (upload_ok && http->Write(reinterpret_cast<const char*>(current_fb_->buf),
-                                     current_fb_->len) >= 0) {
-            total_sent = current_fb_->len;
+        if (upload_ok && http->Write(reinterpret_cast<const char*>(jpeg_data), jpeg_len) >= 0) {
+            total_sent = jpeg_len;
         } else {
             upload_ok = false;
         }
