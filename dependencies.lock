@@ -1,26 +1,4 @@
 dependencies:
-  78/esp-ml307:
-    component_hash: 5443836acc5bb9478d9d93c8178cd52a0a53be13470e006656d751e96cf33f9c
-    dependencies:
-    - name: 78/uart-uhci
-      registry_url: https://components.espressif.com
-      require: private
-      rules:
-      - if: target not in [esp32]
-      version: ^0.3.2
-    - matches:
-      - if: idf_version >=6.0
-      name: espressif/mqtt
-      registry_url: https://components.espressif.com
-      require: private
-      version: ^1.0.0
-    - name: idf
-      require: private
-      version: '>=5.5.2'
-    source:
-      registry_url: https://components.espressif.com/
-      type: service
-    version: 3.6.6
   78/esp-wifi-connect:
     component_hash: 3f18f4242db04ea25043980bf9a9412cd83826c53f0d131ffb4343d3b0cf4568
     dependencies:
@@ -76,7 +54,7 @@ dependencies:
       require: private
       version: '>=5.5.2'
     source:
-      registry_url: https://components.espressif.com
+      registry_url: https://components.espressif.com/
       type: service
     version: 0.3.3
   78/xiaozhi-fonts:
@@ -1164,10 +1142,10 @@ dependencies:
       type: service
     version: 1.0.3
 direct_dependencies:
-- 78/esp-ml307
 - 78/esp-wifi-connect
 - 78/esp_lcd_nv3023
 - 78/uart-eth-modem
+- 78/uart-uhci
 - 78/xiaozhi-fonts
 - esphome/esp-hub75
 - espressif/adc_battery_estimation
@@ -1218,6 +1196,6 @@ direct_dependencies:
 - waveshare/esp_lcd_sh8601
 - waveshare/esp_lcd_touch_cst9217
 - wvirgil123/sscma_client
-manifest_hash: 1ce944e2ca041d369917ba82d8ae136627f67a3676defee42ac498b6c23c7fb7
+manifest_hash: b1e47cc8407788a96ae21e45787d4c5609bf238a095a3e64ca31777194a987af
 target: esp32s3
 version: 2.0.0

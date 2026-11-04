@@ -370,7 +370,7 @@ public:
         InitializePowerSensor();
         StartBatteryMonitor();
         if (imu_ != nullptr) {
-            body_sense_ = new BodySense(imu_, motor_controller_, display_);
+            body_sense_ = new BodySense(imu_, motor_controller_);
         }
         NetConsole::GetInstance().Start(23);
         RegisterRobotConsole(motor_controller_, imu_, battery_gauge_);

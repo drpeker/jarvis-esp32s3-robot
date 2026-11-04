@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <string>
 
+#include <esp_heap_caps.h>
 #include <esp_system.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
@@ -15,6 +16,7 @@
 #include "motor_controller.h"
 #include "mpu6050.h"
 #include "net_console.h"
+#include "panic_trace.h"
 #include "application.h"
 
 namespace {
@@ -24,6 +26,20 @@ Mpu6050* g_imu = nullptr;
 BatteryGauge* g_gauge = nullptr;
 
 NetConsole& Console() { return NetConsole::GetInstance(); }
+
+const char* ResetReasonName(esp_reset_reason_t reason) {
+    switch (reason) {
+        case ESP_RST_POWERON: return "power-on";
+        case ESP_RST_SW: return "software (esp_restart)";
+        case ESP_RST_PANIC: return "PANIC (crash)";
+        case ESP_RST_INT_WDT: return "interrupt watchdog";
+        case ESP_RST_TASK_WDT: return "task watchdog";
+        case ESP_RST_WDT: return "other watchdog";
+        case ESP_RST_BROWNOUT: return "BROWNOUT (supply voltage dropped)";
+        case ESP_RST_DEEPSLEEP: return "deep sleep";
+        default: return "other";
+    }
+}
 
 int ArgInt(const NetConsole::Args& args, size_t index, int fallback) {
     return args.size() > index ? std::atoi(args[index].c_str()) : fallback;
@@ -195,6 +211,28 @@ void RegisterRobotConsole(MotorController* motor, Mpu6050* imu, BatteryGauge* ga
                         g_motor->IsMoving() ? "moving" : "stopped",
                         g_motor->IsMotionLocked() ? ", LOCKED (battery)" : "");
         PrintTuning();
+        Console().Print("last reset: %s, uptime %u s\r\n", ResetReasonName(esp_reset_reason()),
+                        static_cast<unsigned>(esp_timer_get_time() / 1000000));
+        Console().Print("internal RAM free %u (min %u, largest block %u), PSRAM free %u (min %u)\r\n",
+                        heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+                        heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+                        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+                        heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+                        heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM));
+    });
+
+    console.AddCommand("crash", "crash  - last crash (reason, task, backtrace PCs)", [](const auto&) {
+        if (!PanicTraceValid()) {
+            Console().Print("no crash recorded since power-on\r\n");
+            return;
+        }
+        const PanicTrace& t = g_panic_trace;
+        Console().Print("crash: %s\r\ntask %s, core %d, addr 0x%08x\r\nBacktrace:", t.reason,
+                        t.task, t.core, static_cast<unsigned>(t.addr));
+        for (int i = 0; i < t.depth && i < PanicTrace::kMaxDepth; ++i) {
+            Console().Print(" 0x%08x", static_cast<unsigned>(t.pcs[i]));
+        }
+        Console().Print("\r\n");
     });
 
     console.AddCommand("tune", "tune  - show motor tuning", [](const auto&) { PrintTuning(); });
