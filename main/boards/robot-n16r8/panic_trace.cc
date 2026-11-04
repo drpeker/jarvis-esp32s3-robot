@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include <esp_attr.h>
+#include <esp_timer.h>
 #include <esp_cpu_utils.h>
 #include <esp_debug_helpers.h>
 #include <esp_private/panic_internal.h>
@@ -27,6 +28,7 @@ extern "C" void __wrap_esp_panic_handler(panic_info_t* info) {
     std::memset(&t, 0, sizeof(t));
     t.core = info->core;
     t.addr = reinterpret_cast<uint32_t>(info->addr);
+    t.uptime_ms = static_cast<uint32_t>(esp_timer_get_time() / 1000);
     const char* reason = g_panic_abort && g_panic_abort_details ? g_panic_abort_details
                                                                 : info->reason;
     if (reason != nullptr) {

@@ -11,6 +11,7 @@ struct PanicTrace {
     uint32_t addr;
     char reason[96];
     char task[16];
+    uint32_t uptime_ms;  // when the crash happened (tells a stale record from a new one)
     int depth;
     uint32_t pcs[kMaxDepth];
 };

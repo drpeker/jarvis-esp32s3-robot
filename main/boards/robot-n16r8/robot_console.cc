@@ -18,6 +18,7 @@
 #include "net_console.h"
 #include "panic_trace.h"
 #include "application.h"
+#include "settings.h"
 
 namespace {
 
@@ -221,18 +222,65 @@ void RegisterRobotConsole(MotorController* motor, Mpu6050* imu, BatteryGauge* ga
                         heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM));
     });
 
-    console.AddCommand("crash", "crash  - last crash (reason, task, backtrace PCs)", [](const auto&) {
+    console.AddCommand("crash", "crash [clear]  - last crash (reason, task, backtrace PCs)", [](const NetConsole::Args& args) {
+        if (args.size() > 1 && args[1] == "clear") {
+            g_panic_trace.magic = 0;
+            Console().Print("crash record cleared\r\n");
+            return;
+        }
         if (!PanicTraceValid()) {
-            Console().Print("no crash recorded since power-on\r\n");
+            Console().Print("no crash recorded (since power-on or 'crash clear')\r\n");
             return;
         }
         const PanicTrace& t = g_panic_trace;
-        Console().Print("crash: %s\r\ntask %s, core %d, addr 0x%08x\r\nBacktrace:", t.reason,
-                        t.task, t.core, static_cast<unsigned>(t.addr));
+        Console().Print("crash at uptime %u ms: %s\r\ntask %s, core %d, addr 0x%08x\r\nBacktrace:",
+                        static_cast<unsigned>(t.uptime_ms), t.reason, t.task, t.core,
+                        static_cast<unsigned>(t.addr));
         for (int i = 0; i < t.depth && i < PanicTrace::kMaxDepth; ++i) {
             Console().Print(" 0x%08x", static_cast<unsigned>(t.pcs[i]));
         }
         Console().Print("\r\n");
+    });
+
+    // Test helpers: speak to the AI without a microphone, and switch the camera off for A/B tests.
+    console.AddCommand("say", "say <text>  - send <text> to the AI as if the user said it", [](const NetConsole::Args& args) {
+        std::string text;
+        for (size_t i = 1; i < args.size(); ++i) {
+            text += (i > 1 ? " " : "") + args[i];
+        }
+        if (text.empty()) {
+            Console().Print("usage: say <text>\r\n");
+            return;
+        }
+        auto& app = Application::GetInstance();
+        for (int i = 0; i < 100 && app.GetDeviceState() != kDeviceStateIdle; ++i) {
+            if (i % 20 == 0) {
+                app.WakeWordInvoke("");  // listening: close the channel; speaking: abort
+            }
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        if (app.GetDeviceState() != kDeviceStateIdle) {
+            Console().Print("not idle, try again\r\n");
+            return;
+        }
+        app.WakeWordInvoke(text);
+        Console().Print("said: %s\r\n", text.c_str());
+    });
+
+    console.AddCommand("camera", "camera on|off  - enable/disable the camera at boot (then reboot)", [](const NetConsole::Args& args) {
+        if (args.size() < 2 || (args[1] != "on" && args[1] != "off")) {
+            Settings settings("robot", false);
+            Console().Print("camera at boot: %s\r\n", settings.GetInt("cam_en", 1) ? "on" : "off");
+            return;
+        }
+        // NVS writes need an internal-RAM stack; the console task's stack is in PSRAM.
+        const int enabled = args[1] == "on" ? 1 : 0;
+        Application::GetInstance().Schedule([enabled]() {
+            Settings settings("robot", true);
+            settings.SetInt("cam_en", enabled);
+        });
+        vTaskDelay(pdMS_TO_TICKS(300));
+        Console().Print("camera at boot: %s (reboot to apply)\r\n", args[1].c_str());
     });
 
     console.AddCommand("tune", "tune  - show motor tuning", [](const auto&) { PrintTuning(); });

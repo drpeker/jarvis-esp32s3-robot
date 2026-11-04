@@ -3,6 +3,7 @@
 #include <driver/i2c_master.h>
 #include <driver/spi_common.h>
 #include <esp_cam_ctlr_dvp.h>
+#include <driver/ledc.h>
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_vendor.h>
@@ -18,6 +19,7 @@
 #include <string>
 
 #include "application.h"
+#include "settings.h"
 #include "assets/lang_config.h"
 #include "button.h"
 #include "codecs/no_audio_codec.h"
@@ -283,29 +285,61 @@ private:
         });
     }
 
-    // The OV2640's RESET/PWDN pins are not wired, so a software restart (OTA) leaves the
-    // sensor in whatever state it was; reset it over SCCB before the driver configures it.
+    // The OV2640's RESET/PWDN pins are not wired, so a software restart (OTA, reboot) leaves
+    // the sensor in whatever state it was. Reset it over SCCB before esp_video configures it.
+    // The sensor's SCCB needs XCLK, which esp_video only starts later, so XCLK is given here
+    // from a spare LEDC timer/channel (motors use timer 2, channels 1-4) and released again.
+    // The camera (LCD_CAM/DVP) hardware is not touched: with the IDF DVP driver doing this
+    // reset, voice turns hit interrupt-watchdog resets (I2S RX queue spinlock), v1.4 did not.
     void ResetCameraSensor() {
+        ledc_timer_config_t timer = {};
+        timer.speed_mode = LEDC_LOW_SPEED_MODE;
+        timer.duty_resolution = LEDC_TIMER_2_BIT;
+        timer.timer_num = LEDC_TIMER_3;
+        timer.freq_hz = 10000000;  // 10 MHz, inside the OV2640's 6-27 MHz XCLK range
+        timer.clk_cfg = LEDC_AUTO_CLK;
+        ledc_channel_config_t channel = {};
+        channel.gpio_num = CAMERA_PIN_XCLK;
+        channel.speed_mode = LEDC_LOW_SPEED_MODE;
+        channel.channel = LEDC_CHANNEL_7;
+        channel.timer_sel = LEDC_TIMER_3;
+        channel.duty = 2;  // 50 %
+        const bool clock_on =
+            ledc_timer_config(&timer) == ESP_OK && ledc_channel_config(&channel) == ESP_OK;
+        if (!clock_on) {
+            ESP_LOGW(TAG, "Camera XCLK could not be started for the sensor reset");
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+
         i2c_device_config_t config = {};
         config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
         config.device_address = 0x30;
         config.scl_speed_hz = I2C_BUS_FREQ_HZ;
         i2c_master_dev_handle_t sensor = nullptr;
-        if (i2c_master_bus_add_device(i2c_bus_, &config, &sensor) != ESP_OK) {
-            return;
+        if (i2c_master_bus_add_device(i2c_bus_, &config, &sensor) == ESP_OK) {
+            const uint8_t select_sensor_bank[2] = {0xFF, 0x01};
+            const uint8_t system_reset[2] = {0x12, 0x80};  // COM7 SRST
+            if (i2c_master_transmit(sensor, select_sensor_bank, 2, 50) != ESP_OK ||
+                i2c_master_transmit(sensor, system_reset, 2, 50) != ESP_OK) {
+                ESP_LOGW(TAG, "Camera sensor soft reset failed");
+            } else {
+                ESP_LOGI(TAG, "Camera sensor soft reset done (XCLK %s)", clock_on ? "on" : "off");
+            }
+            i2c_master_bus_rm_device(sensor);
         }
-        const uint8_t select_sensor_bank[2] = {0xFF, 0x01};
-        const uint8_t system_reset[2] = {0x12, 0x80};  // COM7 SRST
-        if (i2c_master_transmit(sensor, select_sensor_bank, 2, 50) != ESP_OK ||
-            i2c_master_transmit(sensor, system_reset, 2, 50) != ESP_OK) {
-            ESP_LOGW(TAG, "Camera sensor soft reset failed");
-        }
-        i2c_master_bus_rm_device(sensor);
         vTaskDelay(pdMS_TO_TICKS(50));
+
+        ledc_stop(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_7, 0);
+        ledc_timer_pause(LEDC_LOW_SPEED_MODE, LEDC_TIMER_3);
+        ledc_timer_config_t release = {};
+        release.speed_mode = LEDC_LOW_SPEED_MODE;
+        release.timer_num = LEDC_TIMER_3;
+        release.deconfigure = true;
+        ledc_timer_config(&release);
+        gpio_reset_pin(CAMERA_PIN_XCLK);  // esp_video routes XCLK to this pin itself
     }
 
     void InitializeCamera() {
-        ResetCameraSensor();
         static esp_cam_ctlr_dvp_pin_config_t dvp_pin_config = {
             .data_width = CAM_CTLR_DATA_WIDTH_8,
             .data_io =
@@ -324,6 +358,8 @@ private:
             .pclk_io = CAMERA_PIN_PCLK,
             .xclk_io = CAMERA_PIN_XCLK,
         };
+
+        ResetCameraSensor();
 
         esp_video_init_sccb_config_t sccb_config = {};
         sccb_config.init_sccb = false;
@@ -361,7 +397,11 @@ public:
         InitializeDisplay();
         InitializeButton();
         InitializeI2c();
-        InitializeCamera();
+        if (Settings("robot", false).GetInt("cam_en", 1)) {
+            InitializeCamera();
+        } else {
+            ESP_LOGW(TAG, "Camera disabled (console: camera on)");
+        }
         ScanI2cBus();
         InitializeImu();
         motor_controller_ = new MotorController(MOTOR_LEFT_IN1_PIN, MOTOR_LEFT_IN2_PIN,
