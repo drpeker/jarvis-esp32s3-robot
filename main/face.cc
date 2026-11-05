@@ -17,17 +17,15 @@
 #include <esp_random.h>
 #include <esp_timer.h>
 #include <jpeg_decoder.h>
-#include <libs/tiny_ttf/lv_tiny_ttf.h>
 
 #include "audio.h"
+#include "font_bitmap.h"
 #include "pins.h"
 #include "power.h"
 #include "status.h"
 
 #define TAG "face"
 
-extern const uint8_t kTtfStart[] asm("_binary_Montserrat_Medium_ttf_start");
-extern const uint8_t kTtfEnd[] asm("_binary_Montserrat_Medium_ttf_end");
 
 namespace {
 
@@ -194,9 +192,9 @@ void Face::Setup() {
     lv_canvas_set_buffer(canvas_, buffer_, w, h, LV_COLOR_FORMAT_RGB565);
     lv_obj_set_pos(canvas_, 0, 0);
 
-    // Captions: bottom strip, last lines visible, user gray / robot white. Drawn from the
-    // embedded Montserrat TTF (the built-in bitmap font has no ç ğ ı İ ö ş ü).
-    const lv_font_t* font = lv_tiny_ttf_create_data(kTtfStart, kTtfEnd - kTtfStart, 14);
+    // Captions: bottom strip, last lines visible, user gray / robot white. Ready-made
+    // bitmap font with Turkish letters, read from flash (font_bitmap).
+    const lv_font_t* font = font_bitmap::Caption();
     if (font == nullptr) font = &lv_font_montserrat_14;
     const int line_h = lv_font_get_line_height(font) + 3;
     cap_h_ = kCaptionLines * line_h;

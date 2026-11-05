@@ -21,7 +21,7 @@ yüklendiğinde de eksiksiz çalışır.
 | Hareket | Jiroskopla dönüşler (öğrenilen erken durma payı), süreyle düz gidiş, PWM en az %80 (kural). Ayarlar NVS `robot`. |
 | IMU | MPU-6050, 10 ms'de bir register okuma (FIFO yok), açılışta kalibrasyon. |
 | Güç | INA219: 3.5 V uyarı / 3.3 V koruma / 3.6 V geri dönüş. |
-| Yüz | ST7789 + LVGL 9: gözler, ifadeler, altyazılar. Altyazılar çalışma anında TTF'ten çiziliyor (Montserrat, Türkçe harfler doğru). |
+| Yüz | ST7789 + LVGL 9: gözler, ifadeler, altyazılar. Altyazılar hazır bitmap font: Noto Sans 14 px (Türkçe harflerle, Ğ hariç), doğrudan flash'tan okunur; çalışma anında çizim yok, RAM kullanmaz. |
 | Wi-Fi | Her denemeden önce tam tarama, bilinen ağın en güçlü erişim noktasına BSSID ile bağlanma, olmazsa yeniden tarama (NeuroVision / NetworkManager yöntemi). Ev modeminde güç kesintisinden sonraki 30–76 sn'lik gecikme böyle 5–10 sn'ye indi. |
 | Wi-Fi kurulumu | Kayıtlı ağ yoksa ya da 30 sn'de bağlanılamazsa robot kendi ağını açar: **Jarvis04112026**, şifresiz (ekranda yazar). Telefon bağlanınca kurulum sayfası kendiliğinden açılır (DNS yönlendirme, bağlantı kontrol adreslerinin yönlendirilmesi, DHCP seçenek 114). Adres: http://192.168.4.1. Ağ seçilir, şifre yazılır; bağlanınca NVS'ye kaydedilir ve kurulum ağı kapanır. Yanlış şifre sayfada gösterilir. |
 | Konsol | Telnet port 23 (`nc 192.168.1.125 23`): `help`, `status`, `crash`, `log on/off`, `log last [satır]`, `cam`, `wake`, `convo`, `turn`, `dist`, `drive`, `stop`, `imu`, `tune`, `set`, `save`, `gyro_scale`, `volume`, `wifi <ssid> <şifre>`, `ota <url>`, `reboot`, `reboot cold` (güç kesintisi gibi: modeme ayrıldığını bildirmeden yeniden başlar, Wi-Fi testi için). |
@@ -45,7 +45,8 @@ wifi  wifi_portal  settings  identity  status         sistem
 console  crash                                          bakım
 server_link.h      sunucu arayüzü  ←  xiaozhi_link (tek uygulama)
 opus_codec  conversation  wake_word  tools              sohbet
-fonts/             Montserrat-Medium.ttf, Montserrat-OFL.txt (SIL OFL 1.1)
+fonts/             font_noto_sans_common_14_1.bin (altyazı fontu, bkz. fonts/README.txt)
+font_bitmap        hazır bitmap fontu flash'tan yükler
 ```
 
 ## Derleme ve yükleme

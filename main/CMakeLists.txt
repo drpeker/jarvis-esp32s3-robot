@@ -1,7 +1,11 @@
 file(GLOB SRCS "*.cc")
-idf_component_register(SRCS ${SRCS}
+# Caption font (fonts/README.txt), embedded 16-byte aligned through an assembler file.
+set(caption_font_s ${CMAKE_CURRENT_BINARY_DIR}/caption_font.S)
+set(FONT_FILE ${CMAKE_CURRENT_LIST_DIR}/fonts/font_noto_sans_common_14_1.bin)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/fonts/caption_font.S.in ${caption_font_s} @ONLY)
+set_property(SOURCE ${caption_font_s} APPEND PROPERTY OBJECT_DEPENDS ${FONT_FILE})
+idf_component_register(SRCS ${SRCS} ${caption_font_s}
                        INCLUDE_DIRS "."
-                       EMBED_FILES "fonts/Montserrat-Medium.ttf"
                        PRIV_REQUIRES nvs_flash esp_driver_i2c esp_driver_ledc esp_driver_gpio
                                      esp_driver_i2s esp_driver_spi esp_lcd esp_wifi esp_netif
                                      esp_event esp_http_client esp_https_ota app_update

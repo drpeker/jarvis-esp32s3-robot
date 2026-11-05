@@ -55,8 +55,10 @@ CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 # System event task: Wi-Fi/IP handlers log; 2.3 KB default is tight.
 CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
 
-# Captions: Montserrat TTF drawn at run time (Turkish letters), LVGL tiny_ttf.
-CONFIG_LV_USE_TINY_TTF=y
+# Captions: ready-made Noto Sans 14 bitmap font from flash (main/fonts); no run-time font
+# rendering (tiny_ttf off).
+# The font file uses LVGL's large glyph records (16 bytes), as in the earlier firmware.
+CONFIG_LV_FONT_FMT_TXT_LARGE=y
 
 
 # Wake word: Jarvis (WakeNet9) from the esp-sr component. main/CMakeLists.txt packs the

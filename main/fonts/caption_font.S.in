@@ -1,0 +1,9 @@
+/* Caption font, embedded 16-byte aligned: the CBIN layout is read with 32-bit loads,
+   which must be aligned on the ESP32-S3 (EMBED_FILES does not align). */
+    .section .rodata.caption_font
+    .balign 16
+    .global caption_font_start
+caption_font_start:
+    .incbin "@FONT_FILE@"
+    .global caption_font_end
+caption_font_end:
