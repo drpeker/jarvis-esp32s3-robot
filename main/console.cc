@@ -181,9 +181,12 @@ void Handle(const std::string& line) {
         Print("imu %s heading %.1f tilt %.1f, read errors %d; mic floor %.1f dBFS, volume %d%%\r\n",
               imu::Ready() ? "ok" : "off", imu::Heading(), imu::TiltDegrees(), imu::ReadErrors(), audio::NoiseFloorDb(),
               audio::Volume());
-        Print("RAM internal %u (min %u), PSRAM %u (min %u)\r\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
-              heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL), heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
-              heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM));
+        // Largest DMA block: the camera needs 16 KB in one piece.
+        Print("RAM internal %u (min %u, largest DMA block %u), PSRAM %u (min %u)\r\n",
+              heap_caps_get_free_size(MALLOC_CAP_INTERNAL), heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+              heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA),
+              heap_caps_get_free_size(MALLOC_CAP_SPIRAM), heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM));
+        Print("%s\r\n", conversation::Describe().c_str());
         PrintTuning();
     } else if (c == "crash") {
         if (a.size() > 1 && a[1] == "clear") {

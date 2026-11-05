@@ -1,6 +1,7 @@
 #include "xiaozhi_link.h"
 
 #include <atomic>
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
@@ -88,8 +89,11 @@ private:
     size_t rx_cap_ = 0, rx_len_ = 0;
 
     // UDP audio channel
+    // Session socket: -1 when no session. The UDP task owns the socket it was started with
+    // and closes it itself once udp_fd_ no longer names it (lwip's shutdown() does nothing
+    // on UDP sockets, so a blocked recv() can only end by its timeout).
     std::atomic<int> udp_fd_{-1};
-    TaskHandle_t udp_task_ = nullptr;
+    std::atomic<int> udp_tasks_{0};
     std::string udp_host_;
     int udp_port_ = 0;
     uint8_t key_[16] = {}, nonce_[16] = {};
@@ -271,7 +275,7 @@ void XiaozhiLink::OnMessage(const char* data, size_t len) {
         if (JsonStr(root, "session_id") == session_id_) {
             ESP_LOGI(TAG, "server closed the session");
             const int fd = udp_fd_.exchange(-1);
-            if (fd >= 0) shutdown(fd, SHUT_RDWR);  // the UDP task closes it
+            (void)fd;  // the UDP task sees this within 200 ms and closes the socket
             if (ev_.on_session_closed) ev_.on_session_closed();
         }
     } else if (type == "tts") {
@@ -332,6 +336,12 @@ bool XiaozhiLink::OpenSession() {
         ESP_LOGE(TAG, "no hello from the server");
         return false;
     }
+    // The previous session's UDP task must be gone first: one socket and one task at a time.
+    for (int i = 0; i < 50 && udp_tasks_.load() > 0; ++i) vTaskDelay(pdMS_TO_TICKS(20));
+    if (udp_tasks_.load() > 0) {
+        ESP_LOGE(TAG, "previous UDP task still running");
+        return false;
+    }
     addrinfo hints = {}, *res = nullptr;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
@@ -343,11 +353,19 @@ bool XiaozhiLink::OpenSession() {
         if (fd >= 0) close(fd);
         return false;
     }
+    timeval tv = {0, 200000};
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     tx_seq_ = rx_seq_ = 0;
     session_start_us_ = esp_timer_get_time();
     udp_fd_.store(fd);
-    xTaskCreatePinnedToCore([](void* a) { static_cast<XiaozhiLink*>(a)->UdpLoop(); }, "udp_rx", 4096, this, 6,
-                            &udp_task_, 0);
+    udp_tasks_.fetch_add(1);
+    if (xTaskCreatePinnedToCore([](void* a) { static_cast<XiaozhiLink*>(a)->UdpLoop(); }, "udp_rx", 4096, this, 6,
+                                nullptr, 0) != pdPASS) {
+        udp_tasks_.fetch_sub(1);
+        udp_fd_.store(-1);
+        close(fd);
+        return false;
+    }
     ESP_LOGI(TAG, "session %s open, speaker %d Hz", session_id_.c_str(), speaker_rate_);
     return true;
 }
@@ -356,9 +374,10 @@ void XiaozhiLink::UdpLoop() {
     const int fd = udp_fd_.load();
     uint8_t* buf = (uint8_t*)heap_caps_malloc(1500, MALLOC_CAP_INTERNAL);
     uint8_t* pcm = (uint8_t*)heap_caps_malloc(1500, MALLOC_CAP_INTERNAL);
-    while (buf && pcm) {
+    while (buf && pcm && udp_fd_.load() == fd) {
         const int n = recv(fd, buf, 1500, 0);
-        if (n <= 0) break;  // closed
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) continue;  // timeout: check the session
+        if (n <= 0) break;
         if (n < kHeader || buf[0] != 0x01) continue;
         const uint16_t plen = (buf[2] << 8) | buf[3];
         const uint32_t seq = (uint32_t)buf[12] << 24 | buf[13] << 16 | buf[14] << 8 | buf[15];
@@ -373,7 +392,9 @@ void XiaozhiLink::UdpLoop() {
     heap_caps_free(buf);
     heap_caps_free(pcm);
     close(fd);
-    udp_task_ = nullptr;
+    int expected = fd;
+    udp_fd_.compare_exchange_strong(expected, -1);  // socket error: the session is over too
+    udp_tasks_.fetch_sub(1);
     vTaskDelete(nullptr);
 }
 
@@ -399,8 +420,7 @@ bool XiaozhiLink::SendAudio(const uint8_t* packet, size_t len) {
 
 void XiaozhiLink::CloseSession() {
     if (!session_id_.empty()) Publish("{\"session_id\":\"" + session_id_ + "\",\"type\":\"goodbye\"}");
-    const int fd = udp_fd_.exchange(-1);
-    if (fd >= 0) shutdown(fd, SHUT_RDWR);
+    udp_fd_.store(-1);  // the UDP task closes its socket within 200 ms
     session_id_.clear();
 }
 
@@ -422,7 +442,8 @@ void XiaozhiLink::SendMcp(const std::string& payload) {
 
 std::string XiaozhiLink::Describe() const {
     return std::string("xiaozhi: MQTT ") + (Connected() ? "up" : "down") + ", session " +
-           (SessionOpen() ? session_id_ : std::string("closed")) + ", speaker " + std::to_string(speaker_rate_) + " Hz";
+           (SessionOpen() ? session_id_ : std::string("closed")) + ", speaker " + std::to_string(speaker_rate_) + " Hz, UDP tasks " +
+           std::to_string(udp_tasks_.load());
 }
 
 }  // namespace
