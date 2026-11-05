@@ -13,7 +13,7 @@
 namespace {
 std::mutex g_mutex;
 
-camera_config_t Config() {
+camera_config_t Config(framesize_t size) {
     camera_config_t c = {};
     c.pin_pwdn = -1;
     c.pin_reset = -1;  // not wired: the driver resets the sensor over SCCB (XCLK running)
@@ -36,7 +36,7 @@ camera_config_t Config() {
     c.ledc_timer = LEDC_TIMER_0;     // motors use timer 2, channels 1-4
     c.ledc_channel = LEDC_CHANNEL_0;
     c.pixel_format = PIXFORMAT_JPEG;
-    c.frame_size = FRAMESIZE_HVGA;   // 480x320: enough for the vision model, half the image tokens of VGA
+    c.frame_size = size;
     c.jpeg_quality = 12;
     c.fb_count = 1;
     c.fb_location = CAMERA_FB_IN_PSRAM;
@@ -47,10 +47,10 @@ camera_config_t Config() {
 
 namespace camera {
 
-bool TakePhoto(std::vector<uint8_t>& jpeg, int* width, int* height) {
+bool TakePhoto(std::vector<uint8_t>& jpeg, int* width, int* height, framesize_t size) {
     std::lock_guard<std::mutex> lock(g_mutex);
     const int64_t t0 = esp_timer_get_time();
-    camera_config_t cfg = Config();
+    camera_config_t cfg = Config(size);
     esp_err_t err = esp_camera_init(&cfg);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "init failed: %s", esp_err_to_name(err));
@@ -62,10 +62,12 @@ bool TakePhoto(std::vector<uint8_t>& jpeg, int* width, int* height) {
         s->set_hmirror(s, 1);
     }
     bool ok = false;
-    for (int i = 0; i < 3; ++i) {  // first frames: exposure still settling
+    // Drop 3 frames while exposure and white balance settle, keep the 4th (as in v1.6b).
+    constexpr int kDrop = 3;
+    for (int i = 0; i <= kDrop; ++i) {
         camera_fb_t* fb = esp_camera_fb_get();
         if (fb == nullptr) continue;
-        if (i == 2) {
+        if (i == kDrop) {
             jpeg.assign(fb->buf, fb->buf + fb->len);
             if (width) *width = fb->width;
             if (height) *height = fb->height;

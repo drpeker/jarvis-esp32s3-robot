@@ -538,6 +538,12 @@ bool Face::UpdatePreview(double now) {
     if (pending && photo) {
         photo_shown_ = std::move(photo);
         lv_image_set_src(preview_obj_, &photo_shown_->dsc);
+        // Full screen width, right edge to left edge, keeping the photo's aspect ratio.
+        const int pw = photo_shown_->dsc.header.w, ph = photo_shown_->dsc.header.h;
+        const int box_h = height_ - face_y0_;
+        const int draw_h = pw > 0 ? std::min(box_h, width_ * ph / pw) : box_h;
+        lv_obj_set_size(preview_obj_, width_, draw_h);
+        lv_image_set_inner_align(preview_obj_, LV_IMAGE_ALIGN_STRETCH);
         lv_obj_center(preview_obj_);
         lv_obj_remove_flag(preview_box_, LV_OBJ_FLAG_HIDDEN);
         preview_until_ = now + kPreviewS;
@@ -751,16 +757,23 @@ void SetEmotion(const char* emotion) { g_face.SetEmotion(emotion); }
 
 void SetCaption(const char* role, const std::string& text) { g_face.SetCaption(role, text); }
 
-// 480x320 JPEG -> 240x160 RGB565 preview (half scale, full width of the face area).
+// Camera JPEG -> RGB565 at the smallest decoder scale that is still at least the screen width
+// (1024x768 -> 256x192), stretched to the full screen width (240x180).
 void ShowPhoto(const std::vector<uint8_t>& jpeg) {
     auto photo = std::make_unique<Photo>();
     esp_jpeg_image_cfg_t cfg = {};
     cfg.indata = const_cast<uint8_t*>(jpeg.data());
     cfg.indata_size = jpeg.size();
     cfg.out_format = JPEG_IMAGE_FORMAT_RGB565;
-    cfg.out_scale = JPEG_IMAGE_SCALE_1_2;
     esp_jpeg_image_output_t info = {};
-    if (esp_jpeg_get_image_info(&cfg, &info) != ESP_OK || info.output_len == 0) return;
+    const esp_jpeg_image_scale_t kScales[] = {JPEG_IMAGE_SCALE_1_8, JPEG_IMAGE_SCALE_1_4, JPEG_IMAGE_SCALE_1_2,
+                                              JPEG_IMAGE_SCALE_0};
+    for (esp_jpeg_image_scale_t sc : kScales) {
+        cfg.out_scale = sc;
+        if (esp_jpeg_get_image_info(&cfg, &info) != ESP_OK) return;
+        if ((int)info.width >= LCD_WIDTH) break;
+    }
+    if (info.output_len == 0) return;
     photo->pixels = (uint16_t*)heap_caps_malloc(info.output_len, MALLOC_CAP_SPIRAM);
     if (photo->pixels == nullptr) return;
     cfg.outbuf = (uint8_t*)photo->pixels;

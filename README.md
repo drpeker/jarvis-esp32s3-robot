@@ -17,13 +17,13 @@ yüklendiğinde de eksiksiz çalışır.
 | Ses | I2S mikrofon 16 kHz → Opus (60 ms, mono) → sunucu; sunucudan Opus 24 kHz → hoparlör. |
 | Sunucu bağlantısı | xiaozhi.me: HTTPS yapılandırma isteği, MQTT (TLS 8883) kontrol mesajları, UDP + AES-128-CTR ses. Aktivasyon kodu ekranda gösterilir. |
 | Araçlar (MCP) | `self.get_device_status`, `self.robot.move` (dön / ileri / geri), `self.robot.stop`, `self.camera.take_photo` (fotoğrafı çekip sunucunun görme servisine sorar), `self.audio_speaker.set_volume`, `self.robot.express` (yüz ifadesi). |
-| Kamera | OV2640, esp32-camera sürücüsü, sadece fotoğraf anında açılır ve kapanır (sürekli akış yok). HVGA 480×320 JPEG, önizleme ekranda. |
+| Kamera | OV2640, esp32-camera sürücüsü, sadece fotoğraf anında açılır ve kapanır (sürekli akış yok). XGA 1024×768 JPEG (`camera.h` `kPhotoSize`; `cam sweep upload` bütün boyutları ölçer); pozlama ve beyaz dengesi için 3 kare atılır, 4. gönderilir. Önizleme ekranı yatayda soldan sağa tam doldurur (240×180). |
 | Hareket | Jiroskopla dönüşler (öğrenilen erken durma payı), süreyle düz gidiş, PWM en az %80 (kural). Ayarlar NVS `robot`. |
 | IMU | MPU-6050, 10 ms'de bir register okuma (FIFO yok), açılışta kalibrasyon. |
 | Güç | INA219: 3.5 V uyarı / 3.3 V koruma / 3.6 V geri dönüş. |
 | Yüz | ST7789 + LVGL 9: gözler, ifadeler, altyazılar. Altyazılar çalışma anında TTF'ten çiziliyor (Montserrat, Türkçe harfler doğru). |
 | Wi-Fi | Her denemeden önce tam tarama, bilinen ağın en güçlü erişim noktasına BSSID ile bağlanma, olmazsa yeniden tarama (NeuroVision / NetworkManager yöntemi). Ev modeminde güç kesintisinden sonraki 30–76 sn'lik gecikme böyle 5–10 sn'ye indi. |
-| Wi-Fi kurulumu | Kayıtlı ağ yoksa ya da 30 sn'de bağlanılamazsa robot kendi ağını açar: **Jarvis04112026**, şifre **jarvis2026** (ekranda yazar). Telefon bağlanınca kurulum sayfası kendiliğinden açılır (DNS yönlendirme, bağlantı kontrol adreslerinin yönlendirilmesi, DHCP seçenek 114). Adres: http://192.168.4.1. Ağ seçilir, şifre yazılır; bağlanınca NVS'ye kaydedilir ve kurulum ağı kapanır. Yanlış şifre sayfada gösterilir. |
+| Wi-Fi kurulumu | Kayıtlı ağ yoksa ya da 30 sn'de bağlanılamazsa robot kendi ağını açar: **Jarvis04112026**, şifresiz (ekranda yazar). Telefon bağlanınca kurulum sayfası kendiliğinden açılır (DNS yönlendirme, bağlantı kontrol adreslerinin yönlendirilmesi, DHCP seçenek 114). Adres: http://192.168.4.1. Ağ seçilir, şifre yazılır; bağlanınca NVS'ye kaydedilir ve kurulum ağı kapanır. Yanlış şifre sayfada gösterilir. |
 | Konsol | Telnet port 23 (`nc 192.168.1.125 23`): `help`, `status`, `crash`, `log on/off`, `log last [satır]`, `cam`, `wake`, `convo`, `turn`, `dist`, `drive`, `stop`, `imu`, `tune`, `set`, `save`, `gyro_scale`, `volume`, `wifi <ssid> <şifre>`, `ota <url>`, `reboot`, `reboot cold` (güç kesintisi gibi: modeme ayrıldığını bildirmeden yeniden başlar, Wi-Fi testi için). |
 | Çökme kaydı | Panik nedeni RTC belleğinde saklanır, `crash` ile okunur (`addr2line` ile `build/jarvis.elf`). |
 | Güncelleme | `tools/ota.sh [--build]`: Mac'ten Wi-Fi üzerinden. Bootloader'da rollback açık; yeni sürüm Wi-Fi ve konsol ayağa kalkınca kendini geçerli işaretler. |

@@ -29,6 +29,7 @@
 #include "power.h"
 #include "settings.h"
 #include "status.h"
+#include "tools.h"
 
 #define TAG "console"
 
@@ -157,7 +158,7 @@ void Ota(const std::string& url) {
 }
 
 void Help() {
-    Print("status | crash [clear] | log on|off | log last [lines] | cam | wake | convo\r\n"
+    Print("status | crash [clear] | log on|off | log last [lines] | cam [sweep [upload]] | wake | convo\r\n"
           "turn <l|r> [deg] | dist <f|b> [cm] | drive <f|b> <ms> [speed%%] | stop | imu\r\n"
           "tune | set <key> <value> | save | gyro_scale <value> | volume <0-100>\r\n"
           "wifi <ssid> <password>\r\n"
@@ -205,6 +206,34 @@ void Handle(const std::string& line) {
         Print("wake sent\r\n");
     } else if (c == "convo") {
         Print("%s\r\n", conversation::Describe().c_str());
+    } else if (c == "cam" && a.size() > 1 && a[1] == "sweep") {
+        // Every OV2640 size: JPEG bytes, capture time; with 'upload' also the vision upload.
+        const bool upload = a.size() > 2 && a[2] == "upload";
+        static const struct { framesize_t size; const char* name; } kSizes[] = {
+            {FRAMESIZE_QQVGA, "QQVGA"}, {FRAMESIZE_QCIF, "QCIF"},   {FRAMESIZE_HQVGA, "HQVGA"},
+            {FRAMESIZE_240X240, "240x240"}, {FRAMESIZE_QVGA, "QVGA"}, {FRAMESIZE_CIF, "CIF"},
+            {FRAMESIZE_HVGA, "HVGA"},   {FRAMESIZE_VGA, "VGA"},     {FRAMESIZE_SVGA, "SVGA"},
+            {FRAMESIZE_XGA, "XGA"},     {FRAMESIZE_HD, "HD"},       {FRAMESIZE_SXGA, "SXGA"},
+            {FRAMESIZE_UXGA, "UXGA"}};
+        Print("size      WxH        bytes  capture_ms%s\r\n", upload ? "  upload_ms  answer_ms" : "");
+        for (const auto& s : kSizes) {
+            std::vector<uint8_t> jpeg;
+            int w = 0, h = 0;
+            const int64_t t0 = esp_timer_get_time();
+            const bool ok = camera::TakePhoto(jpeg, &w, &h, s.size);
+            const int cap = (int)((esp_timer_get_time() - t0) / 1000);
+            if (!ok) {
+                Print("%-8s  FAILED\r\n", s.name);
+                continue;
+            }
+            Print("%-8s  %4dx%-4d  %6u  %5d", s.name, w, h, (unsigned)jpeg.size(), cap);
+            if (upload) {
+                int up = 0, total = 0;
+                const bool uok = tools::MeasureUpload(jpeg, &up, &total);
+                Print("  %9d  %9d%s", up, total, uok ? "" : "  (failed)");
+            }
+            Print("\r\n");
+        }
     } else if (c == "cam") {
         std::vector<uint8_t> jpeg;
         int w = 0, h = 0;

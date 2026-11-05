@@ -122,14 +122,13 @@ void OpenPortal() {
     wifi_config_t ap = {};
     std::strncpy((char*)ap.ap.ssid, wifi_portal::kSsid, sizeof(ap.ap.ssid) - 1);
     ap.ap.ssid_len = std::strlen(wifi_portal::kSsid);
-    std::strncpy((char*)ap.ap.password, wifi_portal::kPassword, sizeof(ap.ap.password) - 1);
-    ap.ap.authmode = WIFI_AUTH_WPA2_PSK;
+    ap.ap.authmode = WIFI_AUTH_OPEN;  // no password: join from the phone at once
     ap.ap.max_connection = 2;
     ap.ap.channel = 1;  // follows the station's channel while it is connecting
     esp_wifi_set_config(WIFI_IF_AP, &ap);
     wifi_portal::Start();
     face::SetCaption("system", std::string("Wi-Fi kurulumu: telefonla ") + wifi_portal::kSsid +
-                                   " ağına bağlan, şifre " + wifi_portal::kPassword);
+                                   " ağına bağlan (şifresiz)");
     StartScan(false);
 }
 

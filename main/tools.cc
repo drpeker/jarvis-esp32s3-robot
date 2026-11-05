@@ -144,8 +144,11 @@ cJSON* ToolList() {
 
 // ---- vision: photo to the server's explain URL ----------------------------------------
 
+int g_last_upload_ms = 0;  // time to send the photo (console 'cam sweep upload')
+
 std::string Explain(const std::vector<uint8_t>& jpeg, const std::string& question, bool& ok) {
     ok = false;
+    g_last_upload_ms = 0;
     if (g_vision_url.empty()) return "the server gave no vision URL";
     const char* boundary = "----JarvisPhoto7f3";
     const std::string head = std::string("--") + boundary +
@@ -170,11 +173,13 @@ std::string Explain(const std::vector<uint8_t>& jpeg, const std::string& questio
     }
     std::string resp;
     int status = -1;
-    if (esp_http_client_open(c, head.size() + jpeg.size() + tail.size()) == ESP_OK &&
-        esp_http_client_write(c, head.data(), head.size()) == (int)head.size() &&
-        esp_http_client_write(c, (const char*)jpeg.data(), jpeg.size()) == (int)jpeg.size() &&
-        esp_http_client_write(c, tail.data(), tail.size()) == (int)tail.size() &&
-        esp_http_client_fetch_headers(c) >= 0) {
+    const int64_t t0 = esp_timer_get_time();
+    const bool sent = esp_http_client_open(c, head.size() + jpeg.size() + tail.size()) == ESP_OK &&
+                      esp_http_client_write(c, head.data(), head.size()) == (int)head.size() &&
+                      esp_http_client_write(c, (const char*)jpeg.data(), jpeg.size()) == (int)jpeg.size() &&
+                      esp_http_client_write(c, tail.data(), tail.size()) == (int)tail.size();
+    if (sent) g_last_upload_ms = (int)((esp_timer_get_time() - t0) / 1000);
+    if (sent && esp_http_client_fetch_headers(c) >= 0) {
         status = esp_http_client_get_status_code(c);
         char buf[512];
         int n;
@@ -289,6 +294,15 @@ void Task(void*) {
 }  // namespace
 
 namespace tools {
+
+bool MeasureUpload(const std::vector<uint8_t>& jpeg, int* upload_ms, int* total_ms) {
+    bool ok = false;
+    const int64_t t0 = esp_timer_get_time();
+    Explain(jpeg, "Describe this picture in one short sentence.", ok);
+    *total_ms = (int)((esp_timer_get_time() - t0) / 1000);
+    *upload_ms = g_last_upload_ms;
+    return ok;
+}
 
 void Start(std::function<void(const std::string&)> send) {
     g_send = std::move(send);
