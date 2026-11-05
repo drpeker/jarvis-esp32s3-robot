@@ -1,0 +1,8 @@
+dependencies:
+  idf: ">=5.5"
+  espressif/esp32-camera: "2.1.8"
+  espressif/esp_jpeg: "*"
+  lvgl/lvgl: "9.5.0"
+  espressif/esp_lvgl_port: "2.8.0~1"
+  espressif/esp_audio_codec: "~2.5.0"
+  espressif/esp-sr: "2.4.7"
